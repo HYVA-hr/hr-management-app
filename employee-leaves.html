@@ -84,7 +84,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -121,7 +121,7 @@
             const fromDate = new Date(document.getElementById('fromDate').value);
             const toDate = new Date(document.getElementById('toDate').value);
             const diffTime = Math.abs(toDate - fromDate);
-            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both days
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
             if (toDate < fromDate) {
                 statusMsg.innerText = "Error: 'To Date' cannot be before 'From Date'";
@@ -146,7 +146,7 @@
                 statusMsg.innerText = "Leave Applied Successfully!";
                 statusMsg.style.color = "#2ecc71";
                 document.getElementById('leaveForm').reset();
-                loadLeaveHistory(); // Reload history
+                loadLeaveHistory(); 
             } catch (error) {
                 statusMsg.innerText = "Error: " + error.message;
                 statusMsg.style.color = "#e74c3c";
@@ -162,7 +162,6 @@
                 const q = query(collection(db, "leaves"), where("uid", "==", currentUser.uid));
                 const querySnapshot = await getDocs(q);
                 
-                // Sorting manually since Firestore requires an index for combined where+orderBy
                 let leaves = [];
                 querySnapshot.forEach((doc) => leaves.push(doc.data()));
                 leaves.sort((a, b) => b.appliedAt - a.appliedAt);
