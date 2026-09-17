@@ -19,6 +19,7 @@
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
         .btn-out { background-color: #e74c3c; color: white; }
+        .btn-leave { background-color: #3498db; color: white; }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         
         .stats { margin-top: 25px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; }
@@ -46,6 +47,7 @@
             <button id="clockInBtn" class="action-btn btn-in">Clock In</button>
             <button id="breakBtn" class="action-btn btn-break" disabled>Take Break (ON)</button>
             <button id="clockOutBtn" class="action-btn btn-out" disabled>Clock Out</button>
+            <button onclick="window.location.href='employee-leaves.html'" class="action-btn btn-leave">📅 Apply / View Leaves</button>
         </div>
 
         <div class="stats">
@@ -171,7 +173,7 @@
             } else if (attData.status === "COMPLETED") {
                 ui.status.innerText = "Shift Ended"; ui.status.style.color = "#e74c3c";
                 ui.clockInBtn.disabled = true; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
-                ui.resetBtn.style.display = "inline-block"; // Show reset button for testing
+                ui.resetBtn.style.display = "inline-block"; 
                 clearInterval(timerInterval);
                 renderStaticTimes();
             } else {
@@ -227,14 +229,13 @@
                 await updateDoc(doc(db, "attendance", attendanceDocId), { 
                     status: attData.status, 
                     clockOut: attData.clockOut,
-                    netMinutes: Math.floor(netMs / 60000), // DB me future calculation ke liye minutes save karenge
+                    netMinutes: Math.floor(netMs / 60000), 
                     totalBreakMinutes: Math.floor(breakMs / 60000)
                 });
                 updateUI();
             }
         });
 
-        // Testing ke liye Reset Button function
         ui.resetBtn.addEventListener('click', async () => {
             if(confirm("TESTING: Delete today's attendance and start over?")) {
                 await deleteDoc(doc(db, "attendance", attendanceDocId));
