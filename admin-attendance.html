@@ -74,7 +74,6 @@
             if (!user) {
                 window.location.href = "index.html";
             } else {
-                // Set today's date in picker by default
                 const today = new Date();
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
                 document.getElementById('dateFilter').value = todayStr;
@@ -84,19 +83,21 @@
             }
         });
 
-        // Re-fetch when admin changes date
         document.getElementById('dateFilter').addEventListener('change', (e) => {
             fetchAttendance(e.target.value);
         });
 
         async function fetchAllEmployees() {
             try {
+                allEmployees = [];
                 const q = query(collection(db, "employees"), where("role", "==", "EMPLOYEE"));
                 const snap = await getDocs(q);
                 snap.forEach(doc => {
                     allEmployees.push({ id: doc.id, ...doc.data() });
                 });
-            } catch(e) { console.error("Error fetching employees", e); }
+            } catch(e) { 
+                console.error("Error fetching employees", e); 
+            }
         }
 
         function formatTime(timestamp) {
@@ -125,7 +126,6 @@
                 loading.style.display = "none";
                 totalCount.innerText = `Total Employees: ${allEmployees.length}`;
 
-                // Merge employee list with their attendance for the selected day
                 allEmployees.forEach(emp => {
                     const att = attendanceMap[emp.id];
                     let status = "ABSENT / NOT PUNCHED";
@@ -141,12 +141,10 @@
                         inTime = formatTime(att.clockIn);
                         outTime = formatTime(att.clockOut);
                         
-                        // Calculate Live/Saved times
                         if (att.status === "COMPLETED") {
                             netTime = `${att.netMinutes || 0} mins`;
                             breakTime = `${att.totalBreakMinutes || 0} mins`;
                         } else {
-                            // Calculate current ongoing time logic if shift is open
                             let bMs = 0;
                             if(att.breaks) {
                                 att.breaks.forEach(b => {
@@ -162,12 +160,16 @@
                         }
                     }
 
+                    // Fallback to prevent 'undefined'
+                    const displayName = emp.name || emp.email || "Employee";
+                    const displaySub = emp.employeeId || emp.email || "ID Not Set";
+
                     const card = document.createElement('div');
                     card.className = "emp-card";
                     if(statusClass !== "ABSENT") card.style.borderTopColor = "#2ecc71";
 
                     card.innerHTML = `
-                        <h3>${emp.name} <br><span style="font-size:12px; color:#aaa; font-weight:normal;">${emp.employeeId || emp.email}</span></h3>
+                        <h3>${displayName} <br><span style="font-size:12px; color:#aaa; font-weight:normal;">${displaySub}</span></h3>
                         <span class="status ${statusClass}">${status.replace("_", " ")}</span>
                         <hr>
                         <p><strong>Punch In:</strong> ${inTime}</p>
