@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIRE YOUR VA - Login</title>
     <style>
-        /* Dark Theme based on your Logo */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
             height: 100vh; 
-            background-color: #1a1a1a; /* Dark background */
+            background-color: #1a1a1a; 
             margin: 0; 
-            color: #f5f5dc; /* Cream text */
+            color: #f5f5dc; 
         }
         .login-container { 
             background: #242424; 
@@ -45,7 +44,7 @@
         button { 
             width: 100%; 
             padding: 12px; 
-            background-color: #2ecc71; /* Green accent from logo */
+            background-color: #2ecc71; 
             color: #111; 
             border: none; 
             border-radius: 6px; 
@@ -62,7 +61,6 @@
 <body>
 
     <div class="login-container">
-        <!-- Logo Image -->
         <div class="logo-box">
             <img src="logo.png" alt="Hire Your VA Logo" onerror="this.style.display='none'">
         </div>
@@ -74,17 +72,56 @@
         <div id="error-message"></div>
     </div>
 
-    <!-- Firebase Scripts (Logic hum next step me add karenge) -->
     <script type="module">
-        // Yahani Firebase ka database aur login link hoga
-        document.getElementById('loginBtn').addEventListener('click', () => {
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Aapki update ki hui Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
+            authDomain: "hire-your-va-hr.firebaseapp.com",
+            projectId: "hire-your-va-hr",
+            storageBucket: "hire-your-va-hr.firebasestorage.app",
+            messagingSenderId: "75356368308",
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1",
+            measurementId: "G-PFKWP58KL5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
             
-            if(email && password) {
-                document.getElementById('error-message').innerText = "Connecting to database... (Database link pending)";
-            } else {
-                document.getElementById('error-message').innerText = "Please enter email and password";
+            if (!email || !password) {
+                errorDiv.innerText = "Please enter both email and password.";
+                return;
+            }
+
+            errorDiv.innerText = "Authenticating...";
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const userDoc = await getDoc(doc(db, "employees", user.uid));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    if (userData.role === "ADMIN") {
+                        window.location.href = "admin-dashboard.html";
+                    } else {
+                        window.location.href = "employee-dashboard.html";
+                    }
+                } else {
+                    errorDiv.innerText = "User profile not found in the database.";
+                }
+            } catch (error) {
+                errorDiv.innerText = "Login failed: " + error.message;
             }
         });
     </script>
