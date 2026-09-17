@@ -76,10 +76,8 @@
         let allEmployees = [];
 
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = "index.html";
-            } else {
-                // Set current month by default (YYYY-MM format)
+            if (!user) window.location.href = "index.html";
+            else {
                 const today = new Date();
                 const monthStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
                 document.getElementById('monthFilter').value = monthStr;
@@ -94,7 +92,7 @@
                 snap.forEach(doc => {
                     allEmployees.push({ id: doc.id, ...doc.data() });
                 });
-            } catch(e) { console.error("Error fetching employees", e); }
+            } catch(e) { console.error(e); }
         }
 
         document.getElementById('generateBtn').addEventListener('click', () => {
@@ -116,10 +114,9 @@
             const endDate = `${monthStr}-${daysInMonth}`;
 
             try {
-                // Fetch attendance for the month
                 const attQ = query(collection(db, "attendance"), where("date", ">=", startDate), where("date", "<=", endDate));
                 const attSnap = await getDocs(attQ);
-                let attCountMap = {}; // { uid: presentDays }
+                let attCountMap = {};
                 attSnap.forEach(doc => {
                     const data = doc.data();
                     if(data.status === "COMPLETED" || data.status === "WORKING") {
@@ -127,12 +124,10 @@
                     }
                 });
 
-                // Fetch all leaves (filter in JS to avoid complex Firestore indexing errors for users)
                 const leaveSnap = await getDocs(collection(db, "leaves"));
-                let leaveCountMap = {}; // { uid: approvedLeaveDays }
+                let leaveCountMap = {};
                 leaveSnap.forEach(doc => {
                     const data = doc.data();
-                    // Basic check: if leave is approved and falls in this month
                     if(data.status === "APPROVED" && data.fromDate.startsWith(monthStr)) {
                         leaveCountMap[data.uid] = (leaveCountMap[data.uid] || 0) + data.totalDays;
                     }
@@ -142,16 +137,17 @@
 
                 allEmployees.forEach(emp => {
                     const baseSalary = emp.baseSalary || 0;
-                    const perDayPay = baseSalary / daysInMonth;
-                    
                     const presentDays = attCountMap[emp.id] || 0;
                     const approvedLeaves = leaveCountMap[emp.id] || 0;
+                    
+                    // FIXED: Undefined name bug logic
+                    const displayName = (emp.name && emp.name !== "undefined") ? emp.name : (emp.email || "Unknown Employee");
                     
                     const card = document.createElement('div');
                     card.className = "salary-card";
 
                     card.innerHTML = `
-                        <h3>${emp.name || emp.email}</h3>
+                        <h3>${displayName}</h3>
                         <div class="stat-row"><span>Base Salary:</span> <strong>₹${baseSalary.toLocaleString()}</strong></div>
                         <div class="stat-row"><span>Days in Month:</span> <strong>${daysInMonth} Days</strong></div>
                         <hr>
@@ -172,21 +168,16 @@
                         </div>
                     `;
                     grid.appendChild(card);
-                    
-                    // Initial calculation
                     window.calculateNet(emp.id, baseSalary, daysInMonth);
                 });
 
-                if(allEmployees.length === 0) {
-                    grid.innerHTML = "<p style='color: #aaa;'>No employees found.</p>";
-                }
+                if(allEmployees.length === 0) grid.innerHTML = "<p style='color: #aaa;'>No employees found.</p>";
 
             } catch (error) {
                 loading.innerText = "Error calculating data: " + error.message;
             }
         }
 
-        // Window function for dynamic recalculation
         window.calculateNet = function(empId, baseSalary, daysInMonth) {
             const lopDays = Number(document.getElementById(`lop_${empId}`).value) || 0;
             const bonus = Number(document.getElementById(`bonus_${empId}`).value) || 0;
