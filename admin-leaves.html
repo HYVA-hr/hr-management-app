@@ -12,6 +12,7 @@
         
         .container { padding: 20px; max-width: 800px; margin: 20px auto; }
         h2 { border-bottom: 2px solid #3498db; padding-bottom: 10px; display: inline-block; color: #3498db; }
+        .history-title { border-bottom: 2px solid #aaa; color: #aaa; margin-top: 40px; }
         
         .leave-card { background: #242424; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #f39c12; position: relative; }
         .leave-card h3 { margin: 0 0 5px 0; color: #fff; }
@@ -34,15 +35,23 @@
     </div>
 
     <div class="container">
+        <!-- Pending Section -->
         <h2>Pending Leave Requests</h2>
-        <div id="loadingMsg" style="text-align: center; color: #aaa;">Fetching leave requests...</div>
-        <div id="leavesList"></div>
+        <div id="pendingLeavesList">
+            <p style="text-align: center; color: #aaa;">Fetching pending leaves...</p>
+        </div>
+
+        <!-- History Section -->
+        <h2 class="history-title">Leave History (Resolved)</h2>
+        <div id="historyLeavesList">
+            <p style="text-align: center; color: #aaa;">Fetching history...</p>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -57,70 +66,105 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Sirf Admin allow hona chahiye
+        // Security check
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 window.location.href = "index.html";
             } else {
-                fetchPendingLeaves();
+                fetchLeaves();
             }
         });
 
-        async function fetchPendingLeaves() {
-            const listDiv = document.getElementById('leavesList');
-            const loadingMsg = document.getElementById('loadingMsg');
+        async function fetchLeaves() {
+            const pendingList = document.getElementById('pendingLeavesList');
+            const historyList = document.getElementById('historyLeavesList');
             
             try {
-                // Get all leaves with PENDING status
-                const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
-                const querySnapshot = await getDocs(q);
+                // Fetch ALL leaves so we can split them into Pending and History
+                const querySnapshot = await getDocs(collection(db, "leaves"));
+                let allLeaves = [];
                 
-                if (querySnapshot.empty) {
-                    loadingMsg.innerText = "No pending leave requests at the moment.";
-                    listDiv.innerHTML = "";
-                    return;
-                }
-                
-                loadingMsg.style.display = "none";
-                listDiv.innerHTML = "";
-
-                // Display each leave request
                 for (const leaveDoc of querySnapshot.docs) {
                     const leave = leaveDoc.data();
-                    const leaveId = leaveDoc.id;
+                    leave.id = leaveDoc.id;
                     
-                    // Fetch Employee Name using their UID
+                    // Fetch Employee Name with a solid fallback so 'undefined' doesn't show
                     let empName = "Unknown Employee";
                     try {
                         const empSnap = await getDoc(doc(db, "employees", leave.uid));
                         if(empSnap.exists()) {
-                            empName = empSnap.data().name;
+                            const empData = empSnap.data();
+                            empName = empData.name || empData.email || "Name not registered";
                         }
                     } catch(e) { console.log(e); }
-
-                    const card = document.createElement('div');
-                    card.className = "leave-card";
-                    card.innerHTML = `
-                        <div class="status-badge" style="color: #f39c12;">PENDING</div>
-                        <h3>${empName}</h3>
-                        <p><strong>Type:</strong> ${leave.leaveType}</p>
-                        <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
-                        <p><strong>Reason:</strong> ${leave.reason}</p>
-                        <div class="action-btns">
-                            <button class="btn-approve" onclick="updateLeaveStatus('${leaveId}', 'APPROVED')">Approve</button>
-                            <button class="btn-reject" onclick="updateLeaveStatus('${leaveId}', 'REJECTED')">Reject</button>
-                        </div>
-                    `;
-                    listDiv.appendChild(card);
+                    
+                    leave.empName = empName;
+                    allLeaves.push(leave);
                 }
+                
+                // Sort leaves by latest first
+                allLeaves.sort((a, b) => (b.appliedAt || 0) - (a.appliedAt || 0));
+                
+                // Split arrays based on status
+                const pending = allLeaves.filter(l => l.status === 'PENDING');
+                const history = allLeaves.filter(l => l.status === 'APPROVED' || l.status === 'REJECTED');
+                
+                // RENDER PENDING LEAVES
+                if (pending.length === 0) {
+                    pendingList.innerHTML = "<p style='color: #aaa;'>No pending leave requests at the moment.</p>";
+                } else {
+                    pendingList.innerHTML = "";
+                    pending.forEach(leave => {
+                        const card = document.createElement('div');
+                        card.className = "leave-card";
+                        card.innerHTML = `
+                            <div class="status-badge" style="color: #f39c12;">PENDING</div>
+                            <h3>${leave.empName}</h3>
+                            <p><strong>Type:</strong> ${leave.leaveType}</p>
+                            <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
+                            <p><strong>Reason:</strong> ${leave.reason}</p>
+                            <div class="action-btns">
+                                <button class="btn-approve" onclick="updateLeaveStatus('${leave.id}', 'APPROVED')">Approve</button>
+                                <button class="btn-reject" onclick="updateLeaveStatus('${leave.id}', 'REJECTED')">Reject</button>
+                            </div>
+                        `;
+                        pendingList.appendChild(card);
+                    });
+                }
+
+                // RENDER HISTORY LEAVES
+                if (history.length === 0) {
+                    historyList.innerHTML = "<p style='color: #aaa;'>No leave history found.</p>";
+                } else {
+                    historyList.innerHTML = "";
+                    history.forEach(leave => {
+                        const isApproved = leave.status === 'APPROVED';
+                        const badgeColor = isApproved ? '#2ecc71' : '#e74c3c';
+                        const borderColor = isApproved ? '#2ecc71' : '#e74c3c';
+
+                        const card = document.createElement('div');
+                        card.className = "leave-card";
+                        card.style.borderLeftColor = borderColor; // Green for Approved, Red for Rejected
+                        card.innerHTML = `
+                            <div class="status-badge" style="color: ${badgeColor};">${leave.status}</div>
+                            <h3>${leave.empName}</h3>
+                            <p><strong>Type:</strong> ${leave.leaveType}</p>
+                            <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
+                            <p><strong>Reason:</strong> ${leave.reason}</p>
+                        `;
+                        historyList.appendChild(card);
+                    });
+                }
+                
             } catch (error) {
-                loadingMsg.innerText = "Error fetching leaves: " + error.message;
+                pendingList.innerHTML = "<p style='color: #e74c3c;'>Error fetching leaves: " + error.message + "</p>";
+                historyList.innerHTML = "";
             }
         }
 
-        // Action Function attached to Window so HTML buttons can trigger it
+        // Action Function (Approve/Reject)
         window.updateLeaveStatus = async function(leaveId, newStatus) {
-            const confirmMsg = newStatus === 'APPROVED' ? "Approve this leave?" : "Reject this leave?";
+            const confirmMsg = newStatus === 'APPROVED' ? "Are you sure you want to Approve this leave?" : "Are you sure you want to Reject this leave?";
             if (!confirm(confirmMsg)) return;
 
             try {
@@ -128,8 +172,7 @@
                     status: newStatus,
                     actionTakenAt: Date.now()
                 });
-                alert(`Leave successfully ${newStatus}!`);
-                fetchPendingLeaves(); // Reload list
+                fetchLeaves(); // Auto-refresh lists without reloading the page
             } catch (error) {
                 alert("Error updating leave: " + error.message);
             }
