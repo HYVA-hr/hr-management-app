@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIRE YOUR VA - Employee Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
+        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header img { max-height: 50px; border-radius: 4px; }
+        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .logout-btn:hover { background-color: #c0392b; }
+        
+        .container { padding: 20px; max-width: 450px; margin: 40px auto; text-align: center; background: #242424; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-top: 4px solid #2ecc71; }
+        .time-display { font-size: 45px; font-weight: bold; color: #2ecc71; margin: 20px 0; letter-spacing: 2px; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        button.action-btn { padding: 15px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-in { background-color: #2ecc71; color: #111; }
+        .btn-break { background-color: #f39c12; color: #111; }
+        .btn-out { background-color: #e74c3c; color: white; }
+        button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+        
+        .stats { margin-top: 25px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; }
+        .stats p { margin: 8px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
+        <div>
+            <span id="welcomeMsg" style="margin-right: 15px;">Loading...</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Daily Attendance</h2>
+        <div class="time-display" id="netTimeDisplay">00:00:00</div>
+        <p style="color: #aaa; font-size: 12px; margin-top: -15px;">NET WORKING TIME</p>
+
+        <div class="btn-group">
+            <button id="clockInBtn" class="action-btn btn-in">Clock In</button>
+            <button id="breakBtn" class="action-btn btn-break" disabled>Take Break (ON)</button>
+            <button id="clockOutBtn" class="action-btn btn-out" disabled>Clock Out</button>
+        </div>
+
+        <div class="stats">
+            <p><strong>Status:</strong> <span id="currentStatus" style="color: #aaa;">Not Started</span></p>
+            <p><strong>Clock In:</strong> <span id="clockInTime">--:--</span></p>
+            <p><strong>Total Break Time:</strong> <span id="totalBreakTime">0 mins</span></p>
+            <p><strong>Clock Out:</strong> <span id="clockOutTime">--:--</span></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
+            authDomain: "hire-your-va-hr.firebaseapp.com",
+            projectId: "hire-your-va-hr",
+            storageBucket: "hire-your-va-hr.firebasestorage.app",
+            messagingSenderId: "75356368308",
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let attendanceDocId = "";
+        let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
+        let timerInterval = null;
+
+        const ui = {
+            welcome: document.getElementById('welcomeMsg'),
+            netTime: document.getElementById('netTimeDisplay'),
+            clockInBtn: document.getElementById('clockInBtn'),
+            breakBtn: document.getElementById('breakBtn'),
+            clockOutBtn: document.getElementById('clockOutBtn'),
+            status: document.getElementById('currentStatus'),
+            inTime: document.getElementById('clockInTime'),
+            breakTime: document.getElementById('totalBreakTime'),
+            outTime: document.getElementById('clockOutTime')
+        };
+
+        function getTodayStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function formatTime(ms) {
+            return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                ui.welcome.innerText = "Welcome, Employee";
+                attendanceDocId = `${user.uid}_${getTodayStr()}`;
+                await loadAttendance();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = "index.html");
+        });
+
+        async function loadAttendance() {
+            const docRef = doc(db, "attendance", attendanceDocId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                attData = snap.data();
+                if(!attData.breaks) attData.breaks = [];
+            }
+            updateUI();
+        }
+
+        function calcTimes() {
+            if (!attData.clockIn) return { netMs: 0, breakMs: 0 };
+            
+            let breakMs = 0;
+            attData.breaks.forEach(b => {
+                const end = b.end || (attData.status === "ON_BREAK" ? Date.now() : b.start);
+                breakMs += (end - b.start);
+            });
+
+            const endRef = attData.clockOut || Date.now();
+            const netMs = Math.max(0, (endRef - attData.clockIn) - breakMs);
+            return { netMs, breakMs };
+        }
+
+        function updateUI() {
+            if (attData.status === "WORKING") {
+                ui.status.innerText = "Working"; ui.status.style.color = "#2ecc71";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = false;
+                ui.breakBtn.innerText = "Take Break (ON)";
+                startTimer();
+            } else if (attData.status === "ON_BREAK") {
+                ui.status.innerText = "On Break"; ui.status.style.color = "#f39c12";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = true;
+                ui.breakBtn.innerText = "Resume Work (OFF)";
+                startTimer(); 
+            } else if (attData.status === "COMPLETED") {
+                ui.status.innerText = "Shift Ended"; ui.status.style.color = "#e74c3c";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+                clearInterval(timerInterval);
+                renderStaticTimes();
+            } else {
+                ui.status.innerText = "Not Started"; ui.status.style.color = "#aaa";
+                ui.clockInBtn.disabled = false; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+            }
+
+            if (attData.clockIn) ui.inTime.innerText = formatTime(attData.clockIn);
+            if (attData.clockOut) ui.outTime.innerText = formatTime(attData.clockOut);
+        }
+
+        function renderStaticTimes() {
+            const { netMs, breakMs } = calcTimes();
+            const secs = Math.floor(netMs / 1000);
+            const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+            const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+            const s = String(secs % 60).padStart(2, '0');
+            ui.netTime.innerText = `${h}:${m}:${s}`;
+            ui.breakTime.innerText = `${Math.floor(breakMs / 60000)} mins`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(renderStaticTimes, 1000);
+            renderStaticTimes();
+        }
+
+        ui.clockInBtn.addEventListener('click', async () => {
+            attData = { clockIn: Date.now(), clockOut: null, breaks: [], status: "WORKING", userId: currentUser.uid, date: getTodayStr() };
+            await setDoc(doc(db, "attendance", attendanceDocId), attData);
+            updateUI();
+        });
+
+        ui.breakBtn.addEventListener('click', async () => {
+            if (attData.status === "WORKING") {
+                attData.status = "ON_BREAK";
+                attData.breaks.push({ start: Date.now(), end: null });
+            } else if (attData.status === "ON_BREAK") {
+                attData.status = "WORKING";
+                attData.breaks[attData.breaks.length - 1].end = Date.now();
+            }
+            await updateDoc(doc(db, "attendance", attendanceDocId), { status: attData.status, breaks: attData.breaks });
+            updateUI();
+        });
+
+        ui.clockOutBtn.addEventListener('click', async () => {
+            if(confirm("Are you sure you want to clock out for the day?")) {
+                attData.status = "COMPLETED";
+                attData.clockOut = Date.now();
+                const { netMs, breakMs } = calcTimes();
+                await updateDoc(doc(db, "attendance", attendanceDocId), { 
+                    status: attData.status, 
+                    clockOut: attData.clockOut,
+                    netMinutes: Math.floor(netMs / 60000),
+                    totalBreakMinutes: Math.floor(breakMs / 60000)
+                });
+                updateUI();
+            }
+        });
+    </script>
+</body>
+</html>
