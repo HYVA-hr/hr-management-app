@@ -23,6 +23,8 @@
         
         .stats { margin-top: 25px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; }
         .stats p { margin: 8px 0; font-size: 14px; }
+        
+        #resetBtn { background: none; color: #3498db; border: none; text-decoration: underline; cursor: pointer; margin-top: 15px; display: none; }
     </style>
 </head>
 <body>
@@ -49,15 +51,19 @@
         <div class="stats">
             <p><strong>Status:</strong> <span id="currentStatus" style="color: #aaa;">Not Started</span></p>
             <p><strong>Clock In:</strong> <span id="clockInTime">--:--</span></p>
-            <p><strong>Total Break Time:</strong> <span id="totalBreakTime">0 mins</span></p>
             <p><strong>Clock Out:</strong> <span id="clockOutTime">--:--</span></p>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+            <p><strong>Total Break Time:</strong> <span id="totalBreakTime">00:00:00</span></p>
+            <p><strong>Total Worked Time:</strong> <span id="totalWorkedTime">00:00:00</span></p>
         </div>
+        
+        <button id="resetBtn">Testing Only: Reset Today's Shift</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -85,8 +91,10 @@
             clockOutBtn: document.getElementById('clockOutBtn'),
             status: document.getElementById('currentStatus'),
             inTime: document.getElementById('clockInTime'),
+            outTime: document.getElementById('clockOutTime'),
             breakTime: document.getElementById('totalBreakTime'),
-            outTime: document.getElementById('clockOutTime')
+            workedTime: document.getElementById('totalWorkedTime'),
+            resetBtn: document.getElementById('resetBtn')
         };
 
         function getTodayStr() {
@@ -94,8 +102,16 @@
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
-        function formatTime(ms) {
+        function formatTimeFromTimestamp(ms) {
             return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function msToHMS(ms) {
+            const secs = Math.floor(ms / 1000);
+            const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+            const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+            const s = String(secs % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -119,6 +135,8 @@
             if (snap.exists()) {
                 attData = snap.data();
                 if(!attData.breaks) attData.breaks = [];
+            } else {
+                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
             }
             updateUI();
         }
@@ -138,6 +156,8 @@
         }
 
         function updateUI() {
+            ui.resetBtn.style.display = "none";
+
             if (attData.status === "WORKING") {
                 ui.status.innerText = "Working"; ui.status.style.color = "#2ecc71";
                 ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = false;
@@ -151,25 +171,28 @@
             } else if (attData.status === "COMPLETED") {
                 ui.status.innerText = "Shift Ended"; ui.status.style.color = "#e74c3c";
                 ui.clockInBtn.disabled = true; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+                ui.resetBtn.style.display = "inline-block"; // Show reset button for testing
                 clearInterval(timerInterval);
                 renderStaticTimes();
             } else {
                 ui.status.innerText = "Not Started"; ui.status.style.color = "#aaa";
                 ui.clockInBtn.disabled = false; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+                ui.inTime.innerText = "--:--"; ui.outTime.innerText = "--:--";
+                ui.netTime.innerText = "00:00:00"; ui.breakTime.innerText = "00:00:00"; ui.workedTime.innerText = "00:00:00";
             }
 
-            if (attData.clockIn) ui.inTime.innerText = formatTime(attData.clockIn);
-            if (attData.clockOut) ui.outTime.innerText = formatTime(attData.clockOut);
+            if (attData.clockIn) ui.inTime.innerText = formatTimeFromTimestamp(attData.clockIn);
+            if (attData.clockOut) ui.outTime.innerText = formatTimeFromTimestamp(attData.clockOut);
         }
 
         function renderStaticTimes() {
             const { netMs, breakMs } = calcTimes();
-            const secs = Math.floor(netMs / 1000);
-            const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-            const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-            const s = String(secs % 60).padStart(2, '0');
-            ui.netTime.innerText = `${h}:${m}:${s}`;
-            ui.breakTime.innerText = `${Math.floor(breakMs / 60000)} mins`;
+            const netTimeStr = msToHMS(netMs);
+            const breakTimeStr = msToHMS(breakMs);
+            
+            ui.netTime.innerText = netTimeStr;
+            ui.workedTime.innerText = netTimeStr;
+            ui.breakTime.innerText = breakTimeStr;
         }
 
         function startTimer() {
@@ -204,9 +227,18 @@
                 await updateDoc(doc(db, "attendance", attendanceDocId), { 
                     status: attData.status, 
                     clockOut: attData.clockOut,
-                    netMinutes: Math.floor(netMs / 60000),
+                    netMinutes: Math.floor(netMs / 60000), // DB me future calculation ke liye minutes save karenge
                     totalBreakMinutes: Math.floor(breakMs / 60000)
                 });
+                updateUI();
+            }
+        });
+
+        // Testing ke liye Reset Button function
+        ui.resetBtn.addEventListener('click', async () => {
+            if(confirm("TESTING: Delete today's attendance and start over?")) {
+                await deleteDoc(doc(db, "attendance", attendanceDocId));
+                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
                 updateUI();
             }
         });
