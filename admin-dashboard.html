@@ -5,51 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIRE YOUR VA - Admin Dashboard</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #1a1a1a; 
-            color: #f5f5dc; 
-            margin: 0; 
-            padding: 0; 
-        }
-        .header {
-            background-color: #242424;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
+        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .header img { max-height: 50px; border-radius: 4px; }
-        .logout-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .logout-btn:hover { background-color: #c0392b; }
         
         .container { padding: 20px; max-width: 1200px; margin: auto; }
         h2 { border-bottom: 2px solid #2ecc71; padding-bottom: 10px; display: inline-block; }
         
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .card {
-            background-color: #242424;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-top: 4px solid #2ecc71;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { background-color: #242424; padding: 20px; border-radius: 8px; text-align: center; border-top: 4px solid #2ecc71; cursor: pointer; transition: 0.3s; }
         .card:hover { transform: translateY(-5px); }
         .card h3 { margin: 10px 0; color: #2ecc71; }
     </style>
@@ -80,10 +46,14 @@
                 <h3>📅 Leave Approvals</h3>
                 <p>Approve or reject leave requests.</p>
             </div>
-            <!-- Yahan Salary Sheet ka link add kiya hai -->
             <div class="card" onclick="window.location.href='admin-salary.html'">
                 <h3>💰 Auto Salary Sheet</h3>
                 <p>Calculate month-end salary based on attendance.</p>
+            </div>
+            <!-- Naya Card -->
+            <div class="card" onclick="window.location.href='admin-holidays.html'">
+                <h3>🏖️ Holiday Calendar</h3>
+                <p>Set company holidays and non-working days.</p>
             </div>
         </div>
     </div>
@@ -105,17 +75,12 @@
         const auth = getAuth(app);
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('welcomeMsg').innerText = "Welcome, Admin";
-            } else {
-                window.location.href = "index.html";
-            }
+            if (user) document.getElementById('welcomeMsg').innerText = "Welcome, Admin";
+            else window.location.href = "index.html";
         });
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "index.html";
-            });
+            signOut(auth).then(() => window.location.href = "index.html");
         });
     </script>
 </body>
