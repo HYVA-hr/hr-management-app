@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIRE YOUR VA - Leave Approvals</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
+        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header img { max-height: 40px; border-radius: 4px; }
+        .btn-back { background-color: #555; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        
+        .container { padding: 20px; max-width: 800px; margin: 20px auto; }
+        h2 { border-bottom: 2px solid #3498db; padding-bottom: 10px; display: inline-block; color: #3498db; }
+        
+        .leave-card { background: #242424; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #f39c12; position: relative; }
+        .leave-card h3 { margin: 0 0 5px 0; color: #fff; }
+        .leave-card p { margin: 5px 0; color: #ccc; font-size: 14px; }
+        
+        .action-btns { margin-top: 15px; display: flex; gap: 10px; }
+        .btn-approve { background: #2ecc71; color: #111; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-reject { background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-approve:hover { background: #27ae60; }
+        .btn-reject:hover { background: #c0392b; }
+        
+        .status-badge { position: absolute; top: 20px; right: 20px; font-size: 12px; font-weight: bold; padding: 5px 10px; border-radius: 4px; background: #444; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
+        <a href="admin-dashboard.html" class="btn-back">Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <h2>Pending Leave Requests</h2>
+        <div id="loadingMsg" style="text-align: center; color: #aaa;">Fetching leave requests...</div>
+        <div id="leavesList"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
+            authDomain: "hire-your-va-hr.firebaseapp.com",
+            projectId: "hire-your-va-hr",
+            storageBucket: "hire-your-va-hr.firebasestorage.app",
+            messagingSenderId: "75356368308",
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Sirf Admin allow hona chahiye
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                fetchPendingLeaves();
+            }
+        });
+
+        async function fetchPendingLeaves() {
+            const listDiv = document.getElementById('leavesList');
+            const loadingMsg = document.getElementById('loadingMsg');
+            
+            try {
+                // Get all leaves with PENDING status
+                const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    loadingMsg.innerText = "No pending leave requests at the moment.";
+                    listDiv.innerHTML = "";
+                    return;
+                }
+                
+                loadingMsg.style.display = "none";
+                listDiv.innerHTML = "";
+
+                // Display each leave request
+                for (const leaveDoc of querySnapshot.docs) {
+                    const leave = leaveDoc.data();
+                    const leaveId = leaveDoc.id;
+                    
+                    // Fetch Employee Name using their UID
+                    let empName = "Unknown Employee";
+                    try {
+                        const empSnap = await getDoc(doc(db, "employees", leave.uid));
+                        if(empSnap.exists()) {
+                            empName = empSnap.data().name;
+                        }
+                    } catch(e) { console.log(e); }
+
+                    const card = document.createElement('div');
+                    card.className = "leave-card";
+                    card.innerHTML = `
+                        <div class="status-badge" style="color: #f39c12;">PENDING</div>
+                        <h3>${empName}</h3>
+                        <p><strong>Type:</strong> ${leave.leaveType}</p>
+                        <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
+                        <p><strong>Reason:</strong> ${leave.reason}</p>
+                        <div class="action-btns">
+                            <button class="btn-approve" onclick="updateLeaveStatus('${leaveId}', 'APPROVED')">Approve</button>
+                            <button class="btn-reject" onclick="updateLeaveStatus('${leaveId}', 'REJECTED')">Reject</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                }
+            } catch (error) {
+                loadingMsg.innerText = "Error fetching leaves: " + error.message;
+            }
+        }
+
+        // Action Function attached to Window so HTML buttons can trigger it
+        window.updateLeaveStatus = async function(leaveId, newStatus) {
+            const confirmMsg = newStatus === 'APPROVED' ? "Approve this leave?" : "Reject this leave?";
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                await updateDoc(doc(db, "leaves", leaveId), {
+                    status: newStatus,
+                    actionTakenAt: Date.now()
+                });
+                alert(`Leave successfully ${newStatus}!`);
+                fetchPendingLeaves(); // Reload list
+            } catch (error) {
+                alert("Error updating leave: " + error.message);
+            }
+        };
+    </script>
+</body>
+</html>
