@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIRE YOUR VA - Attendance Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
+        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header img { max-height: 40px; border-radius: 4px; }
+        .btn-back { background-color: #555; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        
+        .container { padding: 20px; max-width: 900px; margin: 20px auto; }
+        
+        .controls { background: #242424; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #2ecc71; }
+        .controls label { font-weight: bold; margin-right: 10px; color: #aaa; }
+        .controls input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; font-family: inherit; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        .emp-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #555; }
+        .emp-card h3 { margin: 0 0 10px 0; color: #2ecc71; }
+        .emp-card p { margin: 5px 0; font-size: 14px; color: #ccc; }
+        .emp-card hr { border: 0; border-top: 1px solid #333; margin: 10px 0; }
+        
+        .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status.WORKING { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .status.ON_BREAK { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+        .status.COMPLETED { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .status.ABSENT { background: rgba(170, 170, 170, 0.2); color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
+        <a href="admin-dashboard.html" class="btn-back">Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div>
+                <label>Select Date:</label>
+                <input type="date" id="dateFilter">
+            </div>
+            <div style="color: #2ecc71; font-weight: bold;" id="totalCount">Total Records: 0</div>
+        </div>
+
+        <div id="loadingMsg" style="text-align: center; color: #aaa;">Fetching attendance data...</div>
+        <div class="grid" id="attendanceGrid"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
+            authDomain: "hire-your-va-hr.firebaseapp.com",
+            projectId: "hire-your-va-hr",
+            storageBucket: "hire-your-va-hr.firebasestorage.app",
+            messagingSenderId: "75356368308",
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        let allEmployees = [];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                // Set today's date in picker by default
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                document.getElementById('dateFilter').value = todayStr;
+                
+                await fetchAllEmployees();
+                fetchAttendance(todayStr);
+            }
+        });
+
+        // Re-fetch when admin changes date
+        document.getElementById('dateFilter').addEventListener('change', (e) => {
+            fetchAttendance(e.target.value);
+        });
+
+        async function fetchAllEmployees() {
+            try {
+                const q = query(collection(db, "employees"), where("role", "==", "EMPLOYEE"));
+                const snap = await getDocs(q);
+                snap.forEach(doc => {
+                    allEmployees.push({ id: doc.id, ...doc.data() });
+                });
+            } catch(e) { console.error("Error fetching employees", e); }
+        }
+
+        function formatTime(timestamp) {
+            if(!timestamp) return "--:--";
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function fetchAttendance(dateString) {
+            const grid = document.getElementById('attendanceGrid');
+            const loading = document.getElementById('loadingMsg');
+            const totalCount = document.getElementById('totalCount');
+            
+            grid.innerHTML = "";
+            loading.style.display = "block";
+            
+            try {
+                const q = query(collection(db, "attendance"), where("date", "==", dateString));
+                const attSnap = await getDocs(q);
+                
+                let attendanceMap = {};
+                attSnap.forEach(doc => {
+                    let data = doc.data();
+                    attendanceMap[data.userId] = data;
+                });
+
+                loading.style.display = "none";
+                totalCount.innerText = `Total Employees: ${allEmployees.length}`;
+
+                // Merge employee list with their attendance for the selected day
+                allEmployees.forEach(emp => {
+                    const att = attendanceMap[emp.id];
+                    let status = "ABSENT / NOT PUNCHED";
+                    let statusClass = "ABSENT";
+                    let inTime = "--:--";
+                    let outTime = "--:--";
+                    let netTime = "0 mins";
+                    let breakTime = "0 mins";
+
+                    if(att) {
+                        status = att.status;
+                        statusClass = att.status;
+                        inTime = formatTime(att.clockIn);
+                        outTime = formatTime(att.clockOut);
+                        
+                        // Calculate Live/Saved times
+                        if (att.status === "COMPLETED") {
+                            netTime = `${att.netMinutes || 0} mins`;
+                            breakTime = `${att.totalBreakMinutes || 0} mins`;
+                        } else {
+                            // Calculate current ongoing time logic if shift is open
+                            let bMs = 0;
+                            if(att.breaks) {
+                                att.breaks.forEach(b => {
+                                    const end = b.end || (att.status === "ON_BREAK" ? Date.now() : b.start);
+                                    bMs += (end - b.start);
+                                });
+                            }
+                            const endRef = att.clockOut || Date.now();
+                            const nMs = Math.max(0, (endRef - att.clockIn) - bMs);
+                            
+                            netTime = `${Math.floor(nMs / 60000)} mins (Live)`;
+                            breakTime = `${Math.floor(bMs / 60000)} mins`;
+                        }
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = "emp-card";
+                    if(statusClass !== "ABSENT") card.style.borderTopColor = "#2ecc71";
+
+                    card.innerHTML = `
+                        <h3>${emp.name} <br><span style="font-size:12px; color:#aaa; font-weight:normal;">${emp.employeeId || emp.email}</span></h3>
+                        <span class="status ${statusClass}">${status.replace("_", " ")}</span>
+                        <hr>
+                        <p><strong>Punch In:</strong> ${inTime}</p>
+                        <p><strong>Punch Out:</strong> ${outTime}</p>
+                        <p><strong>Net Worked:</strong> <span style="color:#2ecc71;">${netTime}</span></p>
+                        <p><strong>Total Break:</strong> ${breakTime}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                loading.innerText = "Error fetching data: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
