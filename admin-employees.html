@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIRE YOUR VA - Manage Employees</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
+        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header img { max-height: 40px; border-radius: 4px; }
+        .btn-back { background-color: #555; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .btn-back:hover { background-color: #777; }
+        
+        .container { padding: 20px; max-width: 800px; margin: 20px auto; }
+        .card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #2ecc71; margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #2ecc71; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        
+        .input-group { display: flex; flex-direction: column; text-align: left; }
+        label { font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        input, select, textarea { padding: 10px; border: 1px solid #444; border-radius: 6px; background-color: #333; color: white; }
+        
+        button.submit-btn { width: 100%; padding: 12px; background-color: #2ecc71; color: #111; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s; }
+        button.submit-btn:hover { background-color: #27ae60; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        #statusMsg { text-align: center; margin-top: 15px; font-weight: bold; }
+        
+        .section-title { grid-column: 1 / -1; margin-top: 15px; margin-bottom: 5px; color: #2ecc71; border-bottom: 1px solid #444; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
+        <a href="admin-dashboard.html" class="btn-back">Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Add New Employee</h2>
+            <p style="font-size: 13px; color: #aaa; margin-top: -10px; margin-bottom: 20px;">
+                Fill details to create employee login & save profile automatically.
+            </p>
+            
+            <form id="addEmployeeForm">
+                <div class="form-grid">
+                    <!-- Login Credentials -->
+                    <div class="section-title">Login Credentials (For App Access)</div>
+                    <div class="input-group">
+                        <label>Email ID (For Login)</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Set Temporary Password</label>
+                        <input type="text" id="password" placeholder="Min 6 characters" required minlength="6">
+                    </div>
+
+                    <!-- Work Details -->
+                    <div class="section-title">Work & Profile Details</div>
+                    <div class="input-group">
+                        <label>Employee ID</label>
+                        <input type="text" id="empId" placeholder="e.g., HYVA-001" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="text" id="phone" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Department</label>
+                        <input type="text" id="department" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Designation</label>
+                        <input type="text" id="designation" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Base Monthly Salary (₹)</label>
+                        <input type="number" id="salary" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Date of Birth (DOB)</label>
+                        <input type="date" id="dob" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Date of Joining (DOJ)</label>
+                        <input type="date" id="doj" required>
+                    </div>
+                </div>
+                
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Full Address</label>
+                    <textarea id="address" rows="3" required></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Create Employee Account</button>
+                <div id="statusMsg"></div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
+            authDomain: "hire-your-va-hr.firebaseapp.com",
+            projectId: "hire-your-va-hr",
+            storageBucket: "hire-your-va-hr.firebasestorage.app",
+            messagingSenderId: "75356368308",
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1"
+        };
+
+        // Main App - For Admin session and Firestore database
+        const mainApp = initializeApp(firebaseConfig);
+        const db = getFirestore(mainApp);
+        const mainAuth = getAuth(mainApp);
+
+        // Secondary App - Sirf naye users create karne ke liye taaki Admin logout na ho jaye
+        const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+        const secondaryAuth = getAuth(secondaryApp);
+
+        // Check if Admin is logged in
+        onAuthStateChanged(mainAuth, (user) => {
+            if (!user) window.location.href = "index.html";
+        });
+
+        document.getElementById('addEmployeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusMsg = document.getElementById('statusMsg');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            submitBtn.disabled = true;
+            statusMsg.innerText = "Creating Employee Account & Saving Profile...";
+            statusMsg.style.color = "#f39c12";
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            try {
+                // Step 1: Create user in Firebase Authentication using Secondary Auth
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const newUserId = userCredential.user.uid;
+
+                // Step 2: Prepare Employee Data for Firestore
+                const employeeData = {
+                    role: "EMPLOYEE",
+                    employeeId: document.getElementById('empId').value,
+                    name: document.getElementById('name').value,
+                    email: email,
+                    phone: document.getElementById('phone').value,
+                    department: document.getElementById('department').value,
+                    designation: document.getElementById('designation').value,
+                    baseSalary: Number(document.getElementById('salary').value),
+                    dob: document.getElementById('dob').value,
+                    doj: document.getElementById('doj').value,
+                    address: document.getElementById('address').value,
+                    createdAt: Date.now()
+                };
+
+                // Step 3: Save Data to Firestore using Main Database
+                await setDoc(doc(db, "employees", newUserId), employeeData);
+                
+                // Step 4: Logout the secondary auth session (to keep it clean)
+                await signOut(secondaryAuth);
+
+                statusMsg.innerText = "Employee Added Successfully! Database Updated.";
+                statusMsg.style.color = "#2ecc71";
+                document.getElementById('addEmployeeForm').reset();
+            } catch (error) {
+                statusMsg.innerText = "Error: " + error.message;
+                statusMsg.style.color = "#e74c3c";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
