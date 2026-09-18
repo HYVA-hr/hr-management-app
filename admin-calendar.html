@@ -119,11 +119,11 @@
         .cal-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
+            grid-template-rows: repeat(6, minmax(90px, auto)); /* Fixed 6 rows to prevent clipping */
             background: #1a1a1a; 
         }
 
         .cal-day { 
-            min-height: 100px; 
             border-right: 1px solid #333; 
             border-bottom: 1px solid #333; 
             padding: 5px; 
@@ -263,7 +263,7 @@
         }
         
         @media (max-width: 600px) {
-            .cal-day { min-height: 80px; padding: 2px; }
+            .cal-grid { grid-template-rows: repeat(6, minmax(75px, auto)); }
             .event-pill { font-size: 9px; padding: 2px 4px; }
             .cal-header h2 { font-size: 18px; }
         }
@@ -375,7 +375,6 @@
             allEvents = {}; 
 
             try {
-                // 1. Fetch Employees for Names & Birthdays mapping
                 const employeeMap = {};
                 const empSnap = await getDocs(collection(db, "employees"));
                 empSnap.forEach(docSnap => {
@@ -392,7 +391,6 @@
                     }
                 });
 
-                // 2. Fetch Holidays
                 const holSnap = await getDocs(collection(db, "holidays"));
                 holSnap.forEach(docSnap => {
                     const data = docSnap.data();
@@ -401,7 +399,6 @@
                     }
                 });
 
-                // 3. Fetch Approved Leaves with correct Employee Name mapping
                 const qLeaves = query(collection(db, "leaves"), where("status", "==", "APPROVED"));
                 const leaveSnap = await getDocs(qLeaves);
                 leaveSnap.forEach(docSnap => {
@@ -440,14 +437,12 @@
             const today = new Date();
             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-            // Blank spaces for days before 1st of month
             for (let i = 0; i < firstDay; i++) {
                 const emptyDiv = document.createElement('div');
                 emptyDiv.className = 'cal-day empty-day';
                 grid.appendChild(emptyDiv);
             }
 
-            // Actual days of the month
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'cal-day';
