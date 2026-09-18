@@ -438,7 +438,14 @@
         let currentUser = null;
         let employeeName = "Employee";
         let attendanceDocId = "";
-        let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
+        let attData = {
+            clockIn: null,
+            clockOut: null,
+            breaks: [],
+            status: "OUT",
+            halfDayMarked: false,
+            adminRevokedLate: false
+        };
         let timerInterval = null;
 
         const ui = {
@@ -612,7 +619,9 @@
                     let breakMs = 0;
                     if(rec.breaks) {
                         rec.breaks.forEach(b => {
-                            if(b.start && b.end) breakMs += (b.end - b.start);
+                            if(b.start && b.end) {
+                                breakMs += (b.end - b.start);
+                            }
                         });
                     }
                     const netMs = rec.clockOut ? Math.max(0, rec.clockOut - rec.clockIn - breakMs) : 0;
@@ -650,11 +659,17 @@
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-            } catch (e) { }
+                osc.connect(gain); 
+                gain.connect(audioCtx.destination); 
+                osc.start(); 
+                osc.stop(audioCtx.currentTime + 0.5);
+            } catch (e) {
+                // Audio context not allowed or failed
+            }
         }
 
         function listenToAdminBroadcasts() {
@@ -692,7 +707,9 @@
                         })
                     });
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("Error acknowledging broadcast", e);
+            }
             ui.broadcastOverlay.style.display = "none";
         });
 
@@ -702,7 +719,8 @@
         }
 
         function getYesterdayStr() {
-            const d = new Date(); d.setDate(d.getDate() - 1);
+            const d = new Date(); 
+            d.setDate(d.getDate() - 1);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
@@ -721,12 +739,28 @@
         function getUserLocation() {
             return new Promise((resolve) => {
                 if (!navigator.geolocation) {
-                    resolve({ error: "Geolocation not supported" }); return;
+                    resolve({ error: "Geolocation not supported" });
+                    return;
                 }
                 navigator.geolocation.getCurrentPosition(
-                    (position) => { resolve({ lat: position.coords.latitude, lng: position.coords.longitude }); },
-                    (error) => { resolve({ error: "Permission denied or failed" }); },
-                    { enableHighAccuracy: true, timeout: 10000 }
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        let errMsg = "Permission denied or failed";
+                        if(error.code === 1) errMsg = "Location Permission Denied";
+                        if(error.code === 2) errMsg = "Network issue or GPS off";
+                        if(error.code === 3) errMsg = "GPS Timeout - Signal weak";
+                        resolve({ error: errMsg });
+                    },
+                    { 
+                        enableHighAccuracy: true, 
+                        timeout: 25000, 
+                        maximumAge: 0 
+                    }
                 );
             });
         }
@@ -739,7 +773,8 @@
                     if (data.isActive === false) {
                         await signOut(auth);
                         alert("Your account has been terminated/blocked by Admin.");
-                        window.location.href = "index.html"; return;
+                        window.location.href = "index.html"; 
+                        return;
                     }
                     employeeName = data.name || data.fullName || "Employee";
                     window.currentUserData = data; 
@@ -763,19 +798,26 @@
                 let resolvedCount = 0;
                 
                 snap.forEach(docSnap => {
-                    if (docSnap.data().status === "APPROVED" || docSnap.data().status === "REJECTED") resolvedCount++;
+                    if (docSnap.data().status === "APPROVED" || docSnap.data().status === "REJECTED") {
+                        resolvedCount++;
+                    }
                 });
                 
                 if (resolvedCount > 0) {
-                    badge.innerText = resolvedCount; badge.style.display = 'inline-block';
+                    badge.innerText = resolvedCount; 
+                    badge.style.display = 'inline-block';
                 } else {
                     badge.style.display = 'none';
                 }
-            } catch (error) { }
+            } catch (error) {
+                console.error("Error fetching badges", error);
+            }
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => { window.location.href = "index.html"; });
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
+            });
         });
 
         async function loadAttendance() {
@@ -794,14 +836,26 @@
                 if (tSnap.exists()) {
                     attData = tSnap.data();
                 } else {
-                    attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
+                    attData = {
+                        clockIn: null,
+                        clockOut: null,
+                        breaks: [],
+                        status: "OUT",
+                        halfDayMarked: false,
+                        adminRevokedLate: false
+                    };
                 }
             }
-            if (!attData.breaks) attData.breaks = []; updateUI();
+            if (!attData.breaks) {
+                attData.breaks = [];
+            }
+            updateUI();
         }
 
         function calcTimes() {
-            if (!attData.clockIn) return { netMs: 0, breakMs: 0 };
+            if (!attData.clockIn) {
+                return { netMs: 0, breakMs: 0 };
+            }
             
             let breakMs = 0;
             attData.breaks.forEach(b => {
@@ -811,6 +865,7 @@
             
             const endRef = attData.clockOut || Date.now();
             const netMs = Math.max(0, (endRef - attData.clockIn) - breakMs);
+            
             return { netMs, breakMs };
         }
 
@@ -819,75 +874,148 @@
             ui.lateWarning.style.display = (attData.halfDayMarked && !attData.adminRevokedLate) ? "block" : "none";
 
             if (attData.status === "WORKING") {
-                ui.status.innerText = "Working"; ui.status.style.color = "#2ecc71";
-                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = false;
-                ui.breakBtn.innerText = "Take Break (ON)"; startTimer();
+                ui.status.innerText = "Working";
+                ui.status.style.color = "#2ecc71";
+                ui.clockInBtn.disabled = true;
+                ui.breakBtn.disabled = false;
+                ui.clockOutBtn.disabled = false;
+                ui.breakBtn.innerText = "Take Break (ON)";
+                startTimer();
             } else if (attData.status === "ON_BREAK") {
-                ui.status.innerText = "On Break"; ui.status.style.color = "#f39c12";
-                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = true;
-                ui.breakBtn.innerText = "Resume Work (OFF)"; startTimer(); 
+                ui.status.innerText = "On Break";
+                ui.status.style.color = "#f39c12";
+                ui.clockInBtn.disabled = true;
+                ui.breakBtn.disabled = false;
+                ui.clockOutBtn.disabled = true;
+                ui.breakBtn.innerText = "Resume Work (OFF)";
+                startTimer(); 
             } else if (attData.status === "COMPLETED") {
-                ui.status.innerText = "Shift Ended"; ui.status.style.color = "#e74c3c";
-                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
-                ui.resetBtn.style.display = "inline-block"; clearInterval(timerInterval); renderStaticTimes();
+                ui.status.innerText = "Shift Ended";
+                ui.status.style.color = "#e74c3c";
+                ui.clockInBtn.disabled = true;
+                ui.breakBtn.disabled = true;
+                ui.clockOutBtn.disabled = true;
+                ui.resetBtn.style.display = "inline-block";
+                clearInterval(timerInterval);
+                renderStaticTimes();
             } else {
-                ui.status.innerText = "Not Started"; ui.status.style.color = "#aaa";
-                ui.clockInBtn.disabled = false; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
-                ui.inTime.innerText = "--:--"; ui.outTime.innerText = "--:--";
-                ui.netTime.innerText = "00:00:00"; ui.breakTime.innerText = "00:00:00"; ui.workedTime.innerText = "00:00:00";
+                ui.status.innerText = "Not Started";
+                ui.status.style.color = "#aaa";
+                ui.clockInBtn.disabled = false;
+                ui.breakBtn.disabled = true;
+                ui.clockOutBtn.disabled = true;
+                ui.inTime.innerText = "--:--";
+                ui.outTime.innerText = "--:--";
+                ui.netTime.innerText = "00:00:00";
+                ui.breakTime.innerText = "00:00:00";
+                ui.workedTime.innerText = "00:00:00";
             }
-            if (attData.clockIn) ui.inTime.innerText = formatTimeFromTimestamp(attData.clockIn);
-            if (attData.clockOut) ui.outTime.innerText = formatTimeFromTimestamp(attData.clockOut);
+            if (attData.clockIn) {
+                ui.inTime.innerText = formatTimeFromTimestamp(attData.clockIn);
+            }
+            if (attData.clockOut) {
+                ui.outTime.innerText = formatTimeFromTimestamp(attData.clockOut);
+            }
         }
 
         function renderStaticTimes() {
             const { netMs, breakMs } = calcTimes();
-            ui.netTime.innerText = msToHMS(netMs); ui.workedTime.innerText = msToHMS(netMs); ui.breakTime.innerText = msToHMS(breakMs);
+            ui.netTime.innerText = msToHMS(netMs);
+            ui.workedTime.innerText = msToHMS(netMs);
+            ui.breakTime.innerText = msToHMS(breakMs);
         }
 
         function startTimer() {
-            clearInterval(timerInterval); timerInterval = setInterval(renderStaticTimes, 1000); renderStaticTimes();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(renderStaticTimes, 1000);
+            renderStaticTimes();
         }
 
         ui.clockInBtn.addEventListener('click', async () => {
-            ui.locStatus.innerText = "Fetching GPS Location..."; ui.clockInBtn.disabled = true;
-            const locationData = await getUserLocation(); ui.locStatus.innerText = "";
-            const now = new Date(); const h = now.getHours(); const m = now.getMinutes();
-            let isLate = false; if (h > 17 || (h === 17 && m > 30) || h < 12) isLate = true;
+            ui.locStatus.innerText = "Fetching GPS Location...";
+            ui.clockInBtn.disabled = true;
+            
+            const locationData = await getUserLocation();
+            ui.locStatus.innerText = "";
+            
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            let isLate = false;
+            
+            if (h > 17 || (h === 17 && m > 30) || h < 12) {
+                isLate = true;
+            }
             
             attData = { 
-                clockIn: Date.now(), clockOut: null, breaks: [], status: "WORKING", userId: currentUser.uid, 
-                date: getTodayStr(), halfDayMarked: isLate, adminRevokedLate: false, inLocation: locationData
+                clockIn: Date.now(),
+                clockOut: null,
+                breaks: [],
+                status: "WORKING",
+                userId: currentUser.uid, 
+                date: getTodayStr(),
+                halfDayMarked: isLate,
+                adminRevokedLate: false,
+                inLocation: locationData
             };
-            await setDoc(doc(db, "attendance", attendanceDocId), attData); updateUI();
+            
+            await setDoc(doc(db, "attendance", attendanceDocId), attData);
+            updateUI();
         });
 
         ui.breakBtn.addEventListener('click', async () => {
             if (attData.status === "WORKING") {
-                attData.status = "ON_BREAK"; attData.breaks.push({ start: Date.now(), end: null });
+                attData.status = "ON_BREAK";
+                attData.breaks.push({
+                    start: Date.now(),
+                    end: null
+                });
             } else if (attData.status === "ON_BREAK") {
-                attData.status = "WORKING"; attData.breaks[attData.breaks.length - 1].end = Date.now();
+                attData.status = "WORKING";
+                attData.breaks[attData.breaks.length - 1].end = Date.now();
             }
-            await updateDoc(doc(db, "attendance", attendanceDocId), { status: attData.status, breaks: attData.breaks }); updateUI();
+            
+            await updateDoc(doc(db, "attendance", attendanceDocId), {
+                status: attData.status,
+                breaks: attData.breaks
+            });
+            updateUI();
         });
 
         ui.clockOutBtn.addEventListener('click', async () => {
             if (confirm("Are you sure you want to clock out?")) {
-                ui.locStatus.innerText = "Fetching GPS Location..."; ui.clockOutBtn.disabled = true;
-                const locationData = await getUserLocation(); ui.locStatus.innerText = "";
+                ui.locStatus.innerText = "Fetching GPS Location...";
+                ui.clockOutBtn.disabled = true;
                 
-                attData.status = "COMPLETED"; attData.clockOut = Date.now(); const { netMs, breakMs } = calcTimes();
+                const locationData = await getUserLocation();
+                ui.locStatus.innerText = "";
+                
+                attData.status = "COMPLETED";
+                attData.clockOut = Date.now();
+                const { netMs, breakMs } = calcTimes();
+                
                 await updateDoc(doc(db, "attendance", attendanceDocId), { 
-                    status: attData.status, clockOut: attData.clockOut, netMinutes: Math.floor(netMs / 60000),
-                    totalBreakMinutes: Math.floor(breakMs / 60000), outLocation: locationData
-                }); updateUI();
+                    status: attData.status,
+                    clockOut: attData.clockOut,
+                    netMinutes: Math.floor(netMs / 60000),
+                    totalBreakMinutes: Math.floor(breakMs / 60000),
+                    outLocation: locationData
+                });
+                updateUI();
             }
         });
 
         ui.resetBtn.addEventListener('click', async () => {
             if (confirm("TESTING: Delete today's attendance and start over?")) {
                 await deleteDoc(doc(db, "attendance", attendanceDocId));
-                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false }; updateUI();
+                attData = {
+                    clockIn: null,
+                    clockOut: null,
+                    breaks: [],
+                    status: "OUT",
+                    halfDayMarked: false
+                };
+                updateUI();
             }
         });
     </script>
