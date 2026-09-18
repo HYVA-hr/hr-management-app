@@ -13,12 +13,10 @@
         .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; }
         .logout-btn:hover { background-color: #c0392b; }
         
-        /* Clean Professional Notification Bell */
         .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #333; border-radius: 50%; border: 1px solid #444; }
         .notif-bell { font-size: 18px; line-height: 1; }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #e74c3c; color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: bold; display: none; }
 
-        /* Toast Popup Banner */
         #toastBanner { visibility: hidden; min-width: 280px; background-color: #2ecc71; color: #111; text-align: left; border-radius: 8px; padding: 14px 18px; position: fixed; z-index: 9999; right: 20px; bottom: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 6px solid #111; }
         #toastBanner.show { visibility: visible; animation: slidein 0.4s, fadeout 0.4s 3.5s; }
         @keyframes slidein { from {bottom: 0; opacity: 0;} to {bottom: 20px; opacity: 1;} }
@@ -52,10 +50,12 @@
             background: #242424;
             padding: 25px;
             border-radius: 10px;
-            max-width: 480px;
+            max-width: 520px;
             width: 100%;
             border-top: 5px solid #e74c3c;
             box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .broadcast-admin-box h3 {
             margin-top: 0;
@@ -106,6 +106,24 @@
             cursor: pointer;
             width: 100%;
             font-size: 13px;
+            margin-top: 10px;
+        }
+        .ack-list-box {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            border: 1px solid #333;
+        }
+        .ack-item {
+            font-size: 12px;
+            color: #2ecc71;
+            margin: 4px 0;
+            border-bottom: 1px solid #252525;
+            padding-bottom: 4px;
         }
     </style>
 </head>
@@ -114,7 +132,6 @@
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
-            <!-- Notification Bell (Redirects to Full Notifications Page) -->
             <div class="notif-container" id="notifContainer" title="Notifications" onclick="window.location.href='admin-notifications.html'">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
@@ -128,22 +145,27 @@
     <!-- Admin Broadcast Modal -->
     <div id="adminBroadcastModal">
         <div class="broadcast-admin-box">
-            <h3>📢 Broadcast Full-Screen Message</h3>
-            <p style="font-size: 13px; color: #aaa; margin: 0 0 10px 0;">This alert will pop up full-screen on all active employees' phones/screens with chime sound.</p>
+            <h3>📢 Broadcast & Acknowledgements</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0 0 10px 0;">Push live full-screen alerts and track who has acknowledged them.</p>
             
             <label style="font-size: 13px; color: #ccc;">Announcement Title:</label>
             <input type="text" id="bcTitleInput" placeholder="e.g., URGENT MEETING AT 4:00 PM">
             
             <label style="font-size: 13px; color: #ccc;">Message / Instructions:</label>
-            <textarea id="bcMsgInput" rows="4" placeholder="Type instructions here..."></textarea>
+            <textarea id="bcMsgInput" rows="3" placeholder="Type instructions here..."></textarea>
             
             <button class="btn-push" id="btnPushBroadcast">🚀 Push Message to All Employees</button>
             <button class="btn-stop-push" id="btnStopBroadcast">🛑 Deactivate / Clear Current Alert</button>
-            <button class="btn-close-modal" id="btnCloseModal">Cancel / Close</button>
+            
+            <h4 style="color: #2ecc71; font-size: 14px; margin: 15px 0 5px 0;">Employee Acknowledgements (Seen & Confirmed):</h4>
+            <div class="ack-list-box" id="ackListContainer">
+                <span style="color: #777; font-size: 12px;">Loading acknowledgements...</span>
+            </div>
+
+            <button class="btn-close-modal" id="btnCloseModal">Close Window</button>
         </div>
     </div>
 
-    <!-- Toast Popup Banner Container -->
     <div id="toastBanner">New notification received!</div>
 
     <div class="container">
@@ -170,9 +192,9 @@
                 <h3>🏖️ Holiday Calendar</h3>
                 <p>Set company holidays and non-working days.</p>
             </div>
-            <div class="card" style="border-top-color: #e74c3c;" onclick="document.getElementById('adminBroadcastModal').style.display='flex'">
-                <h3 style="color: #e74c3c;">📢 Push Announcement</h3>
-                <p>Send an instant full-screen alert to all employees.</p>
+            <div class="card" style="border-top-color: #e74c3c;" onclick="openBroadcastModal()">
+                <h3 style="color: #e74c3c;">📢 Broadcast Announcement</h3>
+                <p>Send full-screen alerts and check employee acknowledgements.</p>
             </div>
         </div>
     </div>
@@ -180,7 +202,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -195,14 +217,13 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Web Audio API Custom Tone
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 Note
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
                 osc.connect(gain);
@@ -212,35 +233,52 @@
             } catch(e) {}
         }
 
-        // Browser Native Web Push Permission Request
-        if (window.Notification && Notification.permission !== "granted") {
-            Notification.requestPermission();
+        const modal = document.getElementById('adminBroadcastModal');
+        document.getElementById('btnCloseModal').addEventListener('click', () => { modal.style.display = 'none'; });
+
+        window.openBroadcastModal = async function() {
+            modal.style.display = 'flex';
+            loadAcknowledgements();
+            try {
+                const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('bcTitleInput').value = data.title || "";
+                    document.getElementById('bcMsgInput').value = data.message || "";
+                }
+            } catch(e) {}
         }
 
-        function showSystemNotification(title, body) {
-            playNotificationSound();
-            
-            // Toast Popup
-            const toast = document.getElementById('toastBanner');
-            toast.innerText = `${title}: ${body}`;
-            toast.className = "show";
-            setTimeout(() => { toast.className = ""; }, 4000);
-
-            // Native Browser Push Notification
-            if (window.Notification && Notification.permission === "granted") {
-                new Notification(title, { body: body, icon: 'logo.png' });
+        async function loadAcknowledgements() {
+            const container = document.getElementById('ackListContainer');
+            try {
+                const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const acks = data.acknowledgements || [];
+                    if (acks.length === 0) {
+                        container.innerHTML = "<span style='color: #777; font-size: 12px;'>No employee has acknowledged yet.</span>";
+                        return;
+                    }
+                    let html = "";
+                    acks.forEach(a => {
+                        const timeStr = new Date(a.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+                        html += `<div class="ack-item">✅ <strong>${a.name}</strong> acknowledged at ${timeStr}</div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = "<span style='color: #777; font-size: 12px;'>No active broadcast found.</span>";
+                }
+            } catch(e) {
+                container.innerHTML = "<span style='color: red; font-size: 12px;'>Failed to load list.</span>";
             }
         }
 
-        // Broadcast Modal handlers
-        const modal = document.getElementById('adminBroadcastModal');
-        document.getElementById('btnCloseModal').addEventListener('click', () => { modal.style.display = 'none'; });
-        
         document.getElementById('btnPushBroadcast').addEventListener('click', async () => {
             const title = document.getElementById('bcTitleInput').value.trim() || "COMPANY ANNOUNCEMENT";
             const message = document.getElementById('bcMsgInput').value.trim();
             if (!message) {
-                alert("Please enter a message to broadcast!");
+                alert("Please enter a message!");
                 return;
             }
 
@@ -249,19 +287,20 @@
                     title: title,
                     message: message,
                     timestamp: Date.now(),
-                    active: true
+                    active: true,
+                    acknowledgements: [] // Reset acknowledgements for new broadcast
                 });
-                alert("🚀 Announcement pushed live to all employees!");
+                alert("🚀 Announcement pushed live & history reset!");
                 modal.style.display = 'none';
             } catch (err) {
-                alert("Error sending broadcast: " + err.message);
+                alert("Error: " + err.message);
             }
         });
 
         document.getElementById('btnStopBroadcast').addEventListener('click', async () => {
             try {
                 await updateDoc(doc(db, "broadcasts", "latest_broadcast"), { active: false });
-                alert("🛑 Active announcement deactivated!");
+                alert("🛑 Announcement deactivated!");
                 modal.style.display = 'none';
             } catch(err) {
                 alert("Error: " + err.message);
