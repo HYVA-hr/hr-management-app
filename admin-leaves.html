@@ -25,6 +25,12 @@
         .btn-reject:hover { background: #c0392b; }
         
         .status-badge { position: absolute; top: 20px; right: 20px; font-size: 12px; font-weight: bold; padding: 5px 10px; border-radius: 4px; background: #444; }
+        
+        /* WhatsApp Toast Notification */
+        #waToast { visibility: hidden; min-width: 250px; background-color: #25D366; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1; right: 30px; bottom: 30px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #waToast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
@@ -35,18 +41,15 @@
     </div>
 
     <div class="container">
-        <!-- Pending Section -->
         <h2>Pending Leave Requests</h2>
-        <div id="pendingLeavesList">
-            <p style="text-align: center; color: #aaa;">Fetching pending leaves...</p>
-        </div>
+        <div id="pendingLeavesList"><p style="text-align: center; color: #aaa;">Fetching pending leaves...</p></div>
 
-        <!-- History Section -->
         <h2 class="history-title">Leave History (Resolved)</h2>
-        <div id="historyLeavesList">
-            <p style="text-align: center; color: #aaa;">Fetching history...</p>
-        </div>
+        <div id="historyLeavesList"><p style="text-align: center; color: #aaa;">Fetching history...</p></div>
     </div>
+    
+    <!-- Toast Popup for WhatsApp -->
+    <div id="waToast">📲 WhatsApp Message Sent!</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -66,21 +69,26 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Security check
         onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "index.html";
-            } else {
-                fetchLeaves();
-            }
+            if (!user) window.location.href = "index.html";
+            else fetchLeaves();
         });
+
+        // DUMMY WHATSAPP API FUNCTION
+        function sendDummyWhatsApp(phone, message) {
+            console.log(`[WA API Triggered] To: ${phone} | Msg: ${message}`);
+            // Future me yahan Fetch() API lagegi Twilio ya WATI ki.
+            const toast = document.getElementById("waToast");
+            toast.innerText = `📲 WA Sent to ${phone}`;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
 
         async function fetchLeaves() {
             const pendingList = document.getElementById('pendingLeavesList');
             const historyList = document.getElementById('historyLeavesList');
             
             try {
-                // Fetch ALL leaves so we can split them into Pending and History
                 const querySnapshot = await getDocs(collection(db, "leaves"));
                 let allLeaves = [];
                 
@@ -88,83 +96,75 @@
                     const leave = leaveDoc.data();
                     leave.id = leaveDoc.id;
                     
-                    // Fetch Employee Name with a solid fallback so 'undefined' doesn't show
                     let empName = "Unknown Employee";
+                    let empPhone = "No Phone";
                     try {
                         const empSnap = await getDoc(doc(db, "employees", leave.uid));
                         if(empSnap.exists()) {
                             const empData = empSnap.data();
                             empName = empData.name || empData.email || "Name not registered";
+                            empPhone = empData.phone || "No Phone";
                         }
-                    } catch(e) { console.log(e); }
+                    } catch(e) {}
                     
                     leave.empName = empName;
+                    leave.empPhone = empPhone;
                     allLeaves.push(leave);
                 }
                 
-                // Sort leaves by latest first
                 allLeaves.sort((a, b) => (b.appliedAt || 0) - (a.appliedAt || 0));
                 
-                // Split arrays based on status
                 const pending = allLeaves.filter(l => l.status === 'PENDING');
                 const history = allLeaves.filter(l => l.status === 'APPROVED' || l.status === 'REJECTED');
                 
-                // RENDER PENDING LEAVES
-                if (pending.length === 0) {
-                    pendingList.innerHTML = "<p style='color: #aaa;'>No pending leave requests at the moment.</p>";
-                } else {
+                // PENDING
+                if (pending.length === 0) pendingList.innerHTML = "<p style='color: #aaa;'>No pending leave requests.</p>";
+                else {
                     pendingList.innerHTML = "";
                     pending.forEach(leave => {
                         const card = document.createElement('div');
                         card.className = "leave-card";
                         card.innerHTML = `
                             <div class="status-badge" style="color: #f39c12;">PENDING</div>
-                            <h3>${leave.empName}</h3>
+                            <h3>${leave.empName} <span style="font-size:12px; font-weight:normal; color:#aaa;">(${leave.empPhone})</span></h3>
                             <p><strong>Type:</strong> ${leave.leaveType}</p>
                             <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
                             <p><strong>Reason:</strong> ${leave.reason}</p>
                             <div class="action-btns">
-                                <button class="btn-approve" onclick="updateLeaveStatus('${leave.id}', 'APPROVED')">Approve</button>
-                                <button class="btn-reject" onclick="updateLeaveStatus('${leave.id}', 'REJECTED')">Reject</button>
+                                <button class="btn-approve" onclick="updateLeaveStatus('${leave.id}', 'APPROVED', '${leave.empPhone}', '${leave.empName}')">Approve</button>
+                                <button class="btn-reject" onclick="updateLeaveStatus('${leave.id}', 'REJECTED', '${leave.empPhone}', '${leave.empName}')">Reject</button>
                             </div>
                         `;
                         pendingList.appendChild(card);
                     });
                 }
 
-                // RENDER HISTORY LEAVES
-                if (history.length === 0) {
-                    historyList.innerHTML = "<p style='color: #aaa;'>No leave history found.</p>";
-                } else {
+                // HISTORY
+                if (history.length === 0) historyList.innerHTML = "<p style='color: #aaa;'>No leave history found.</p>";
+                else {
                     historyList.innerHTML = "";
                     history.forEach(leave => {
                         const isApproved = leave.status === 'APPROVED';
                         const badgeColor = isApproved ? '#2ecc71' : '#e74c3c';
-                        const borderColor = isApproved ? '#2ecc71' : '#e74c3c';
-
                         const card = document.createElement('div');
                         card.className = "leave-card";
-                        card.style.borderLeftColor = borderColor; // Green for Approved, Red for Rejected
+                        card.style.borderLeftColor = badgeColor;
                         card.innerHTML = `
                             <div class="status-badge" style="color: ${badgeColor};">${leave.status}</div>
                             <h3>${leave.empName}</h3>
-                            <p><strong>Type:</strong> ${leave.leaveType}</p>
                             <p><strong>Duration:</strong> ${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</p>
                             <p><strong>Reason:</strong> ${leave.reason}</p>
                         `;
                         historyList.appendChild(card);
                     });
                 }
-                
             } catch (error) {
-                pendingList.innerHTML = "<p style='color: #e74c3c;'>Error fetching leaves: " + error.message + "</p>";
-                historyList.innerHTML = "";
+                pendingList.innerHTML = "<p style='color: #e74c3c;'>Error: " + error.message + "</p>";
             }
         }
 
-        // Action Function (Approve/Reject)
-        window.updateLeaveStatus = async function(leaveId, newStatus) {
-            const confirmMsg = newStatus === 'APPROVED' ? "Are you sure you want to Approve this leave?" : "Are you sure you want to Reject this leave?";
+        window.updateLeaveStatus = async function(leaveId, newStatus, phone, name) {
+            const confirmMsg = newStatus === 'APPROVED' ? "Approve leave and send WA notification?" : "Reject leave and send WA notification?";
             if (!confirm(confirmMsg)) return;
 
             try {
@@ -172,7 +172,12 @@
                     status: newStatus,
                     actionTakenAt: Date.now()
                 });
-                fetchLeaves(); // Auto-refresh lists without reloading the page
+                
+                // Trigger Dummy WhatsApp Call
+                const msg = `Hi ${name}, your leave request has been ${newStatus}.`;
+                sendDummyWhatsApp(phone, msg);
+
+                fetchLeaves(); 
             } catch (error) {
                 alert("Error updating leave: " + error.message);
             }
