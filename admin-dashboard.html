@@ -446,8 +446,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        // REMOVED INVALID 'addTag' FROM IMPORTS
-        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -569,8 +568,8 @@
                 // 1. Update latest active broadcast for live popup on employees side
                 await setDoc(doc(db, "broadcasts", "latest_broadcast"), broadcastData);
 
-                // 2. Save into history collection
-                await addDoc(collection(db, "broadcast_history"), broadcastData);
+                // 2. Save directly into history using Timestamp as Document ID (CRITICAL FIX)
+                await setDoc(doc(db, "broadcast_history", String(broadcastData.timestamp)), broadcastData);
 
                 alert("🚀 Announcement pushed live & saved to history!");
                 modal.style.display = 'none';
