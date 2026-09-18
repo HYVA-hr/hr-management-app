@@ -42,7 +42,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -58,13 +58,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Auto-redirect if already logged in
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                await checkUserRoleAndRedirect(user.uid);
-            }
-        });
-
         // Handle Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -79,7 +72,25 @@
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                await checkUserRoleAndRedirect(userCredential.user.uid);
+                const uid = userCredential.user.uid;
+
+                // Check if account is active
+                const docRef = doc(db, "employees", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    // If marked inactive/terminated, block access
+                    if (userData.isActive === false) {
+                        await signOut(auth);
+                        errorMsg.innerText = "Access Denied: Your account has been terminated/blocked.";
+                        errorMsg.style.color = "#e74c3c";
+                        submitBtn.disabled = false;
+                        return;
+                    }
+                }
+
+                await checkUserRoleAndRedirect(uid);
             } catch (error) {
                 errorMsg.innerText = "Error: " + error.message;
                 errorMsg.style.color = "#e74c3c";
@@ -93,7 +104,7 @@
             const errorMsg = document.getElementById('errorMsg');
 
             if (!email) {
-                errorMsg.innerText = "Please enter your Email address above first, then click 'Forgot Password?'.";
+                errorMsg.innerText = "Please enter your Email address above first.";
                 errorMsg.style.color = "#f39c12";
                 return;
             }
@@ -121,7 +132,6 @@
                         window.location.href = "employee-dashboard.html";
                     }
                 } else {
-                    // Fallback for primary admin if not in employees collection
                     window.location.href = "admin-dashboard.html";
                 }
             } catch (error) {
