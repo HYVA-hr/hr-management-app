@@ -16,11 +16,11 @@
         .controls label { font-weight: bold; margin-right: 10px; color: #aaa; }
         .controls input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; font-family: inherit; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
         
         .emp-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #555; position: relative; }
         .emp-card h3 { margin: 0 0 10px 0; color: #2ecc71; }
-        .emp-card p { margin: 5px 0; font-size: 14px; color: #ccc; }
+        .emp-card p { margin: 8px 0; font-size: 14px; color: #ccc; display: flex; justify-content: space-between; align-items: center;}
         .emp-card hr { border: 0; border-top: 1px solid #333; margin: 10px 0; }
         
         .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
@@ -32,6 +32,10 @@
         .late-tag { background: #e74c3c; color: white; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 10px; }
         .btn-revoke { background: transparent; color: #3498db; border: 1px solid #3498db; padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; display: block; margin-top: 10px; }
         .btn-revoke:hover { background: #3498db; color: white; }
+
+        .map-link { color: #3498db; text-decoration: none; font-size: 12px; border: 1px solid #3498db; padding: 2px 6px; border-radius: 4px; background: rgba(52,152,219,0.1); }
+        .map-link:hover { background: #3498db; color: white; }
+        .loc-error { color: #e74c3c; font-size: 11px; font-style: italic; }
     </style>
 </head>
 <body>
@@ -107,14 +111,20 @@
             return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Global Revoke Function
+        // Help format Map Link
+        function getMapLink(locData) {
+            if(!locData) return `<span class="loc-error">No GPS</span>`;
+            if(locData.error) return `<span class="loc-error">GPS Blocked</span>`;
+            return `<a href="https://www.google.com/maps?q=${locData.lat},${locData.lng}" target="_blank" class="map-link">📍 Map</a>`;
+        }
+
         window.revokeHalfDay = async function(userId, dateStr) {
             if(confirm("Revoke Half-Day penalty? This will give the employee full salary for this day.")) {
                 try {
                     await updateDoc(doc(db, "attendance", `${userId}_${dateStr}`), {
                         adminRevokedLate: true
                     });
-                    fetchAttendance(dateStr); // reload UI
+                    fetchAttendance(dateStr); 
                 } catch (e) {
                     alert("Error: " + e.message);
                 }
@@ -151,6 +161,8 @@
                     let netTime = "0 mins";
                     let breakTime = "0 mins";
                     let lateWarningHtml = "";
+                    let inLocHtml = "";
+                    let outLocHtml = "";
 
                     if(att) {
                         status = att.status;
@@ -158,7 +170,10 @@
                         inTime = formatTime(att.clockIn);
                         outTime = formatTime(att.clockOut);
                         
-                        // Half day Logic Display
+                        // Render Maps Links
+                        if(att.clockIn) inLocHtml = getMapLink(att.inLocation);
+                        if(att.clockOut) outLocHtml = getMapLink(att.outLocation);
+                        
                         if(att.halfDayMarked) {
                             if(att.adminRevokedLate) {
                                 lateWarningHtml = `<span style="color:#2ecc71; font-size:11px; margin-left:10px;">✅ Penalty Revoked</span>`;
@@ -199,10 +214,17 @@
                         <span class="status ${statusClass}">${status.replace("_", " ")}</span>
                         ${lateWarningHtml}
                         <hr>
-                        <p><strong>Punch In:</strong> ${inTime}</p>
-                        <p><strong>Punch Out:</strong> ${outTime}</p>
-                        <p><strong>Net Worked:</strong> <span style="color:#2ecc71;">${netTime}</span></p>
-                        <p><strong>Total Break:</strong> ${breakTime}</p>
+                        <p>
+                            <span><strong>Punch In:</strong> ${inTime}</span>
+                            ${inLocHtml}
+                        </p>
+                        <p>
+                            <span><strong>Punch Out:</strong> ${outTime}</span>
+                            ${outLocHtml}
+                        </p>
+                        <hr style="border-top: 1px dashed #444;">
+                        <p><span><strong>Net Worked:</strong> <span style="color:#2ecc71;">${netTime}</span></span></p>
+                        <p><span><strong>Total Break:</strong> ${breakTime}</span></p>
                     `;
                     grid.appendChild(card);
                 });
