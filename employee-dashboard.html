@@ -173,6 +173,8 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        .btn-profile { background-color: #34495e; color: white; border: 1px solid #2c3e50; }
+        .btn-profile:hover { background-color: #2c3e50; }
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
         .btn-out { background-color: #e74c3c; color: white; }
@@ -279,6 +281,18 @@
         .btn-ack:hover {
             background: #27ae60;
         }
+
+        /* Employee Profile Modal */
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: #242424; padding: 20px; border-radius: 10px; border-top: 4px solid #3498db; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: left; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; color: #3498db; font-size: 20px; }
+        .close-btn { background: transparent; color: #aaa; border: none; font-size: 24px; cursor: pointer; line-height: 1; padding: 0; }
+        .close-btn:hover { color: #fff; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .profile-detail { margin-bottom: 8px; font-size: 14px; }
+        .profile-detail span { color: #aaa; display: block; font-size: 12px; margin-bottom: 2px; }
+        .profile-detail strong { color: #fff; font-size: 14px; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -286,7 +300,7 @@
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
-            <!-- Notification Bell (Facebook Style Page Redirect) -->
+            <!-- Notification Bell -->
             <div class="notif-container" id="notifContainer" title="Notifications" onclick="window.location.href='employee-notifications.html'">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
@@ -307,6 +321,19 @@
         </div>
     </div>
 
+    <!-- Employee Profile Modal -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 My Profile</h3>
+                <button class="close-btn" id="closeProfileBtn">&times;</button>
+            </div>
+            <div id="profileContent">
+                <p style="color: #aaa; text-align: center;">Loading profile...</p>
+            </div>
+        </div>
+    </div>
+
     <div id="toastBanner">Update received!</div>
 
     <div class="container">
@@ -318,6 +345,7 @@
         <div id="locationStatus"></div>
 
         <div class="btn-group">
+            <button id="viewProfileBtn" class="action-btn btn-profile">👤 View My Profile</button>
             <button id="clockInBtn" class="action-btn btn-in">Clock In</button>
             <button id="breakBtn" class="action-btn btn-break" disabled>Take Break (ON)</button>
             <button id="clockOutBtn" class="action-btn btn-out" disabled>Clock Out</button>
@@ -378,8 +406,39 @@
             broadcastOverlay: document.getElementById('broadcastOverlay'),
             broadcastTitle: document.getElementById('broadcastTitle'),
             broadcastMsg: document.getElementById('broadcastMsg'),
-            btnAckBroadcast: document.getElementById('btnAckBroadcast')
+            btnAckBroadcast: document.getElementById('btnAckBroadcast'),
+            viewProfileBtn: document.getElementById('viewProfileBtn'),
+            profileModal: document.getElementById('profileModal'),
+            closeProfileBtn: document.getElementById('closeProfileBtn'),
+            profileContent: document.getElementById('profileContent')
         };
+
+        // Profile Modal Logic
+        ui.viewProfileBtn.addEventListener('click', () => {
+            if (window.currentUserData) {
+                const d = window.currentUserData;
+                ui.profileContent.innerHTML = `
+                    <div class="profile-grid">
+                        <div class="profile-detail"><span>Full Name</span><strong>${d.name || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Employee ID</span><strong>${d.employeeId || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Phone Number</span><strong>${d.phone || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Email Address</span><strong>${d.email || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Department</span><strong>${d.department || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Designation</span><strong>${d.designation || 'N/A'}</strong></div>
+                        <div class="profile-detail"><span>Base Salary</span><strong>₹${(d.baseSalary || 0).toLocaleString()}</strong></div>
+                        <div class="profile-detail"><span>Date of Joining</span><strong>${d.doj || 'N/A'}</strong></div>
+                    </div>
+                    <div class="profile-detail" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                        <span>Full Address</span><strong>${d.address || 'N/A'}</strong>
+                    </div>
+                `;
+            }
+            ui.profileModal.style.display = 'flex';
+        });
+
+        ui.closeProfileBtn.addEventListener('click', () => {
+            ui.profileModal.style.display = 'none';
+        });
 
         // Custom Web Audio API Chime Tone
         function playNotificationSound() {
@@ -485,17 +544,19 @@
             if (user) {
                 const docSnap = await getDoc(doc(db, "employees", user.uid));
                 if (docSnap.exists()) {
-                    if (docSnap.data().isActive === false) {
+                    const data = docSnap.data();
+                    if (data.isActive === false) {
                         await signOut(auth);
                         alert("Your account has been terminated/blocked by Admin.");
                         window.location.href = "index.html";
                         return;
                     }
-                    employeeName = docSnap.data().name || docSnap.data().fullName || "Employee";
+                    employeeName = data.name || data.fullName || "Employee";
+                    window.currentUserData = data; // Save to global object for profile modal
                 }
 
                 currentUser = user;
-                ui.welcome.innerText = "Welcome, Employee";
+                ui.welcome.innerText = `Welcome, ${employeeName.split(' ')[0]}`;
                 await loadAttendance();
                 checkBadgeCount(user.uid);
                 listenToAdminBroadcasts();
@@ -665,7 +726,7 @@
                 ui.locStatus.innerText = "";
 
                 attData.status = "COMPLETED";
-                attData.clockout = Date.now();
+                attData.clockOut = Date.now();
                 const { netMs, breakMs } = calcTimes();
                 
                 await updateDoc(doc(db, "attendance", attendanceDocId), { 
