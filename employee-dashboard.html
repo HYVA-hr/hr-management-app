@@ -333,7 +333,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -349,6 +349,7 @@
         const db = getFirestore(app);
 
         let currentUser = null;
+        let employeeName = "Employee";
         let attendanceDocId = "";
         let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
         let timerInterval = null;
@@ -413,11 +414,22 @@
 
         ui.btnAckBroadcast.addEventListener('click', async () => {
             try {
-                const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
+                const docRef = doc(db, "broadcasts", "latest_broadcast");
+                const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    localStorage.setItem('dismissed_broadcast_id', String(docSnap.data().timestamp));
+                    const data = docSnap.data();
+                    localStorage.setItem('dismissed_broadcast_id', String(data.timestamp));
+                    
+                    // Save Employee Name & Timestamp to Firestore Acknowledgements History
+                    await updateDoc(docRef, {
+                        acknowledgements: arrayUnion({
+                            uid: currentUser.uid,
+                            name: employeeName,
+                            time: Date.now()
+                        })
+                    });
                 }
-            } catch(e) {}
+            } catch(e) { console.error(e); }
             ui.broadcastOverlay.style.display = "none";
         });
 
@@ -465,11 +477,14 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const docSnap = await getDoc(doc(db, "employees", user.uid));
-                if (docSnap.exists() && docSnap.data().isActive === false) {
-                    await signOut(auth);
-                    alert("Your account has been terminated/blocked by Admin.");
-                    window.location.href = "index.html";
-                    return;
+                if (docSnap.exists()) {
+                    if (docSnap.data().isActive === false) {
+                        await signOut(auth);
+                        alert("Your account has been terminated/blocked by Admin.");
+                        window.location.href = "index.html";
+                        return;
+                    }
+                    employeeName = docSnap.data().name || docSnap.data().fullName || "Employee";
                 }
 
                 currentUser = user;
