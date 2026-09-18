@@ -19,7 +19,7 @@
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
         
-        .salary-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #f39c12; }
+        .salary-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #f39c12; position: relative; }
         .salary-card h3 { margin: 0 0 5px 0; color: #f39c12; }
         .salary-card hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
         
@@ -31,6 +31,14 @@
         .input-row input { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; text-align: center; font-weight: bold; }
         
         .final-salary { font-size: 26px; font-weight: bold; color: #2ecc71; text-align: center; margin-top: 15px; background: #111; padding: 10px; border-radius: 6px; border: 1px solid #2ecc71; }
+        
+        .btn-wa { width: 100%; background: #25D366; color: white; font-weight: bold; padding: 10px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-size: 14px; }
+        .btn-wa:hover { background: #128C7E; }
+
+        #waToast { visibility: hidden; min-width: 250px; background-color: #25D366; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1; right: 30px; bottom: 30px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #waToast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
@@ -54,6 +62,8 @@
         <div id="loadingMsg" style="text-align: center; color: #aaa; display: none;">Fetching attendance, leaves & holidays...</div>
         <div class="grid" id="salaryGrid"></div>
     </div>
+    
+    <div id="waToast">📲 WhatsApp Message Sent!</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -74,6 +84,7 @@
         const db = getFirestore(app);
         
         let allEmployees = [];
+        window.salaryDataCache = {}; // global cache to hold live salary data
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) window.location.href = "index.html";
@@ -101,6 +112,17 @@
             generateSalaryData(selectedMonth);
         });
 
+        // DUMMY WHATSAPP API FUNCTION
+        window.sendSalaryWA = function(empId, phone, name) {
+            const netPay = window.salaryDataCache[empId];
+            console.log(`[WA API] To: ${phone} | Msg: Hi ${name}, your Net Salary is Rs ${netPay}`);
+            
+            const toast = document.getElementById("waToast");
+            toast.innerText = `📲 Salary Slip sent to ${phone}`;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
         async function generateSalaryData(monthStr) {
             const grid = document.getElementById('salaryGrid');
             const loading = document.getElementById('loadingMsg');
@@ -124,23 +146,15 @@
                 const attSnap = await getDocs(attQ);
                 let attCountMap = {};
                 let penaltyMap = {}; 
-                let weekendWorkedMap = {}; // Kitne weekends par kaam kiya
+                let weekendWorkedMap = {}; 
 
                 attSnap.forEach(doc => {
                     const data = doc.data();
                     if(data.status === "COMPLETED" || data.status === "WORKING") {
                         attCountMap[data.userId] = (attCountMap[data.userId] || 0) + 1;
-                        
-                        // Penalty check
-                        if(data.halfDayMarked && !data.adminRevokedLate) {
-                            penaltyMap[data.userId] = (penaltyMap[data.userId] || 0) + 0.5;
-                        }
-
-                        // Weekend Work Check
+                        if(data.halfDayMarked && !data.adminRevokedLate) penaltyMap[data.userId] = (penaltyMap[data.userId] || 0) + 0.5;
                         let punchDate = new Date(data.date);
-                        if(punchDate.getDay() === 0 || punchDate.getDay() === 6) {
-                            weekendWorkedMap[data.userId] = (weekendWorkedMap[data.userId] || 0) + 1;
-                        }
+                        if(punchDate.getDay() === 0 || punchDate.getDay() === 6) weekendWorkedMap[data.userId] = (weekendWorkedMap[data.userId] || 0) + 1;
                     }
                 });
 
@@ -148,9 +162,7 @@
                 let leaveCountMap = {};
                 leaveSnap.forEach(doc => {
                     const data = doc.data();
-                    if(data.status === "APPROVED" && data.fromDate.startsWith(monthStr)) {
-                        leaveCountMap[data.uid] = (leaveCountMap[data.uid] || 0) + data.totalDays;
-                    }
+                    if(data.status === "APPROVED" && data.fromDate.startsWith(monthStr)) leaveCountMap[data.uid] = (leaveCountMap[data.uid] || 0) + data.totalDays;
                 });
 
                 const holQ = query(collection(db, "holidays"), where("date", ">=", startDate), where("date", "<=", endDate));
@@ -158,9 +170,7 @@
                 let holidaysCount = 0;
                 holSnap.forEach(doc => {
                     let holDate = new Date(doc.data().date);
-                    if(holDate.getDay() !== 0 && holDate.getDay() !== 6) { 
-                        holidaysCount++;
-                    }
+                    if(holDate.getDay() !== 0 && holDate.getDay() !== 6) holidaysCount++;
                 });
 
                 loading.style.display = "none";
@@ -171,23 +181,19 @@
                     const halfDayPenalties = penaltyMap[emp.id] || 0;
                     const approvedLeaves = leaveCountMap[emp.id] || 0;
                     const weekendPunches = weekendWorkedMap[emp.id] || 0;
+                    const phone = emp.phone || "No Phone";
                     
                     const displayName = (emp.name && emp.name !== "undefined") ? emp.name : (emp.email || "Unknown Employee");
 
-                    // AUTO LOP CALCULATION 
                     let autoLop = daysInMonth - (presentDays + approvedLeaves + weekendsCount + holidaysCount);
-                    // Agar weekend pe kaam kiya to presentDays badh jayenge, to autoLop negative me ja sakta hai.
-                    // Negative na ho uske liye:
                     if (autoLop < 0) autoLop = 0; 
-                    
-                    // Late mark penalty half day
                     autoLop += halfDayPenalties;
                     
                     const card = document.createElement('div');
                     card.className = "salary-card";
 
                     card.innerHTML = `
-                        <h3>${displayName}</h3>
+                        <h3>${displayName} <span style="font-size:12px; font-weight:normal; color:#aaa;">(${phone})</span></h3>
                         <div class="stat-row"><span>Base Salary:</span> <strong>₹${baseSalary.toLocaleString()}</strong></div>
                         <div class="stat-row"><span>Days in Month:</span> <strong>${daysInMonth} Days</strong></div>
                         <hr>
@@ -196,12 +202,6 @@
                         <div class="stat-row"><span>Weekends & Holidays (Paid):</span> <strong>${weekendsCount + holidaysCount} Days</strong></div>
                         
                         ${halfDayPenalties > 0 ? `<div class="stat-row" style="color:#e74c3c;"><span>Late Penalty Deductions:</span> <strong>${halfDayPenalties} Days</strong></div>` : ""}
-                        
-                        ${weekendPunches > 0 ? `
-                        <div class="stat-row" style="color:#3498db; margin-top:10px; background:#111; padding:5px; border-radius:4px; border: 1px solid #3498db;">
-                            <span>⚠️ Worked on Weekends:</span> <strong style="color:white;">${weekendPunches} Days</strong>
-                        </div>
-                        <p style="font-size:11px; color:#aaa; margin:0 0 10px 0;">(Add extra pay for these weekend days in the Bonus box below)</p>` : ""}
                         
                         <div class="input-row" style="margin-top: 15px; border-left: 3px solid #e74c3c;">
                             <span style="color: #e74c3c; font-weight: bold;">Unpaid Days (Auto LOP):</span>
@@ -212,9 +212,8 @@
                             <input type="number" id="bonus_${emp.id}" value="0" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
                         </div>
                         
-                        <div class="final-salary" id="net_${emp.id}">
-                            ₹${baseSalary.toLocaleString()}
-                        </div>
+                        <div class="final-salary" id="net_${emp.id}">₹${baseSalary.toLocaleString()}</div>
+                        <button class="btn-wa" onclick="sendSalaryWA('${emp.id}', '${phone}', '${displayName}')">📲 Send Payslip via WhatsApp</button>
                     `;
                     grid.appendChild(card);
                     
@@ -231,14 +230,14 @@
         window.calculateNet = function(empId, baseSalary, daysInMonth) {
             const lopDays = Number(document.getElementById(`lop_${empId}`).value) || 0;
             const bonus = Number(document.getElementById(`bonus_${empId}`).value) || 0;
-            
             const perDayPay = baseSalary / daysInMonth;
-            const deductions = lopDays * perDayPay;
             
-            let netSalary = baseSalary - deductions + bonus;
+            let netSalary = baseSalary - (lopDays * perDayPay) + bonus;
             if(netSalary < 0) netSalary = 0;
+            netSalary = Math.round(netSalary);
             
-            document.getElementById(`net_${empId}`).innerText = `Net Pay: ₹${Math.round(netSalary).toLocaleString()}`;
+            window.salaryDataCache[empId] = netSalary;
+            document.getElementById(`net_${empId}`).innerText = `Net Pay: ₹${netSalary.toLocaleString()}`;
         }
     </script>
 </body>
