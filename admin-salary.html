@@ -113,33 +113,37 @@
             const startDate = `${monthStr}-01`;
             const endDate = `${monthStr}-${daysInMonth}`;
 
-            // Step 1: Count Weekends (Saturdays and Sundays) 5-Days Working Rule
             let weekendsCount = 0;
             for (let i = 1; i <= daysInMonth; i++) {
                 let d = new Date(year, month - 1, i);
-                if (d.getDay() === 0 || d.getDay() === 6) weekendsCount++; // 0=Sun, 6=Sat
+                if (d.getDay() === 0 || d.getDay() === 6) weekendsCount++; 
             }
 
             try {
-                // Step 2: Fetch Attendance & Calculate Half Day Penalties
                 const attQ = query(collection(db, "attendance"), where("date", ">=", startDate), where("date", "<=", endDate));
                 const attSnap = await getDocs(attQ);
                 let attCountMap = {};
-                let penaltyMap = {}; // User UID -> count of 0.5 penalties
+                let penaltyMap = {}; 
+                let weekendWorkedMap = {}; // Kitne weekends par kaam kiya
 
                 attSnap.forEach(doc => {
                     const data = doc.data();
                     if(data.status === "COMPLETED" || data.status === "WORKING") {
                         attCountMap[data.userId] = (attCountMap[data.userId] || 0) + 1;
                         
-                        // If marked late and admin didn't revoke it, add 0.5 days penalty
+                        // Penalty check
                         if(data.halfDayMarked && !data.adminRevokedLate) {
                             penaltyMap[data.userId] = (penaltyMap[data.userId] || 0) + 0.5;
+                        }
+
+                        // Weekend Work Check
+                        let punchDate = new Date(data.date);
+                        if(punchDate.getDay() === 0 || punchDate.getDay() === 6) {
+                            weekendWorkedMap[data.userId] = (weekendWorkedMap[data.userId] || 0) + 1;
                         }
                     }
                 });
 
-                // Step 3: Fetch Leaves
                 const leaveSnap = await getDocs(collection(db, "leaves"));
                 let leaveCountMap = {};
                 leaveSnap.forEach(doc => {
@@ -149,7 +153,6 @@
                     }
                 });
 
-                // Step 4: Fetch Company Holidays (Exclude weekends from counting double)
                 const holQ = query(collection(db, "holidays"), where("date", ">=", startDate), where("date", "<=", endDate));
                 const holSnap = await getDocs(holQ);
                 let holidaysCount = 0;
@@ -167,15 +170,17 @@
                     const presentDays = attCountMap[emp.id] || 0;
                     const halfDayPenalties = penaltyMap[emp.id] || 0;
                     const approvedLeaves = leaveCountMap[emp.id] || 0;
+                    const weekendPunches = weekendWorkedMap[emp.id] || 0;
                     
                     const displayName = (emp.name && emp.name !== "undefined") ? emp.name : (emp.email || "Unknown Employee");
 
                     // AUTO LOP CALCULATION 
-                    // Missing Days = Total Month - (Present + Leaves + Weekends + Holidays)
                     let autoLop = daysInMonth - (presentDays + approvedLeaves + weekendsCount + holidaysCount);
+                    // Agar weekend pe kaam kiya to presentDays badh jayenge, to autoLop negative me ja sakta hai.
+                    // Negative na ho uske liye:
                     if (autoLop < 0) autoLop = 0; 
                     
-                    // Add half-day late penalties to the Unpaid Days
+                    // Late mark penalty half day
                     autoLop += halfDayPenalties;
                     
                     const card = document.createElement('div');
@@ -188,16 +193,22 @@
                         <hr>
                         <div class="stat-row"><span>Total Present (Punched In):</span> <strong style="color:#2ecc71;">${presentDays} Days</strong></div>
                         <div class="stat-row"><span>Approved Leaves (Paid):</span> <strong>${approvedLeaves} Days</strong></div>
-                        <div class="stat-row"><span>Weekends (Sat/Sun Paid):</span> <strong>${weekendsCount} Days</strong></div>
-                        <div class="stat-row"><span>Company Holidays (Paid):</span> <strong>${holidaysCount} Days</strong></div>
+                        <div class="stat-row"><span>Weekends & Holidays (Paid):</span> <strong>${weekendsCount + holidaysCount} Days</strong></div>
+                        
                         ${halfDayPenalties > 0 ? `<div class="stat-row" style="color:#e74c3c;"><span>Late Penalty Deductions:</span> <strong>${halfDayPenalties} Days</strong></div>` : ""}
+                        
+                        ${weekendPunches > 0 ? `
+                        <div class="stat-row" style="color:#3498db; margin-top:10px; background:#111; padding:5px; border-radius:4px; border: 1px solid #3498db;">
+                            <span>⚠️ Worked on Weekends:</span> <strong style="color:white;">${weekendPunches} Days</strong>
+                        </div>
+                        <p style="font-size:11px; color:#aaa; margin:0 0 10px 0;">(Add extra pay for these weekend days in the Bonus box below)</p>` : ""}
                         
                         <div class="input-row" style="margin-top: 15px; border-left: 3px solid #e74c3c;">
                             <span style="color: #e74c3c; font-weight: bold;">Unpaid Days (Auto LOP):</span>
                             <input type="number" step="0.5" id="lop_${emp.id}" value="${autoLop}" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
                         </div>
-                        <div class="input-row" style="border-left: 3px solid #f39c12;">
-                            <span>Add Bonus / Allowance (₹):</span>
+                        <div class="input-row" style="border-left: 3px solid #3498db;">
+                            <span>Add Bonus / Weekend Extra (₹):</span>
                             <input type="number" id="bonus_${emp.id}" value="0" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
                         </div>
                         
