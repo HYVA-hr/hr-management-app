@@ -47,12 +47,12 @@
             font-size: 14px; 
             font-weight: 500; 
             color: #f5f5dc; 
-            display: none; /* Mobile par hide rahega taaki clutter na ho */
+            display: none; 
         }
 
         @media(min-width: 500px) {
             #welcomeMsg {
-                display: inline; /* Badi screens par dikhega */
+                display: inline; 
             }
         }
 
@@ -398,7 +398,6 @@
                 <h3>🏖️ Holiday Calendar</h3>
                 <p>Set company holidays and non-working days.</p>
             </div>
-            <!-- Added Master Calendar Card -->
             <div class="card" style="border-top-color: #3498db;" onclick="window.location.href='admin-calendar.html'">
                 <h3 style="color: #3498db;">📆 Master Calendar</h3>
                 <p>View synchronized holidays, birthdays & approved leaves.</p>
@@ -452,6 +451,18 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Register Service Worker for PWA Notifications Support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+
+        // Request browser permission for push notifications
+        if (window.Notification && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -466,6 +477,14 @@
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.5);
             } catch(e) {}
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toastBanner');
+            toast.innerText = text;
+            toast.className = "show";
+            playNotificationSound();
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3500);
         }
 
         const modal = document.getElementById('adminBroadcastModal');
@@ -547,25 +566,36 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById('welcomeMsg').innerText = "Welcome, Admin";
-                checkAdminBadge();
+                initRealtimeNotifications();
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        async function checkAdminBadge() {
-            try {
-                const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
-                const snap = await getDocs(q);
+        // Realtime Firestore Listener for Pending Leaves & Notifications
+        function initRealtimeNotifications() {
+            let initialLoad = true;
+            const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
+            
+            onSnapshot(q, (snapshot) => {
                 const badge = document.getElementById('notifBadge');
-                
-                if(!snap.empty) {
-                    badge.innerText = snap.size;
+                const size = snapshot.size;
+
+                if(size > 0) {
+                    badge.innerText = size;
                     badge.style.display = 'inline-block';
                 } else {
                     badge.style.display = 'none';
                 }
-            } catch(e) { console.error(e); }
+
+                // Trigger sound and popup on new incoming leave request (skipping initial snapshot load)
+                if (!initialLoad && snapshot.docChanges().some(change => change.type === "added")) {
+                    showToast("🔔 New leave request received!");
+                }
+                initialLoad = false;
+            }, (error) => {
+                console.error(error);
+            });
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
