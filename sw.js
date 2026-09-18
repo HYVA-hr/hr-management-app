@@ -16,6 +16,11 @@ self.addEventListener('install', (event) => {
       return cache.addAll(assetsToCache);
     })
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
@@ -24,4 +29,17 @@ self.addEventListener('fetch', (event) => {
       return response || fetch(event.request);
     })
   );
+});
+
+// Added Push Notification Listener for background alerts
+self.addEventListener('push', (event) => {
+    const data = event.data ? event.data.json() : { title: 'Hire Your VA', body: 'New notification received!' };
+    const options = {
+        body: data.body,
+        icon: 'logo.png',
+        badge: 'logo.png'
+    };
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+    );
 });
