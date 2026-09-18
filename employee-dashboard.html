@@ -155,6 +155,15 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Verify if employee is still active
+                const docSnap = await getDoc(doc(db, "employees", user.uid));
+                if (docSnap.exists() && docSnap.data().isActive === false) {
+                    await signOut(auth);
+                    alert("Your account has been terminated/blocked by Admin.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
                 currentUser = user;
                 ui.welcome.innerText = "Welcome, Employee";
                 await loadAttendance();
@@ -241,6 +250,7 @@
         }
 
         function startTimer() {
+            clearInterval(timerIntentVal); // fallback clean
             clearInterval(timerInterval);
             timerInterval = setInterval(renderStaticTimes, 1000);
             renderStaticTimes();
