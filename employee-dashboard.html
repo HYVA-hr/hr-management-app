@@ -5,45 +5,273 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIRE YOUR VA - Employee Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 15px; }
-        .header { background-color: #242424; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); position: relative; }
-        .header img { max-height: 45px; border-radius: 4px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        #welcomeMsg { font-size: 14px; font-weight: 500; color: #f5f5dc; display: none; }
-        @media(min-width: 500px) { #welcomeMsg { display: inline; } }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #f5f5dc;
+            margin: 0;
+            padding: 0;
+            font-size: 15px;
+        }
+        .header {
+            background-color: #242424;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .header img {
+            max-height: 45px;
+            border-radius: 4px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #welcomeMsg {
+            font-size: 14px;
+            font-weight: 500;
+            color: #f5f5dc;
+            display: none;
+        }
+        @media(min-width: 500px) {
+            #welcomeMsg {
+                display: inline;
+            }
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: background-color 0.3s;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
         
-        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background-color 0.3s; }
-        .logout-btn:hover { background-color: #c0392b; }
-        
-        /* Notification Bell (Direct Redirect to Page) */
-        .notif-container { position: relative; cursor: pointer; }
-        .notif-bell { font-size: 16px; background: #333; padding: 6px 10px; border-radius: 50%; display: inline-block; border: 1px solid #444; }
-        .notif-badge { position: absolute; top: -3px; right: -3px; background: #e74c3c; color: white; font-size: 10px; padding: 1px 5px; border-radius: 50%; font-weight: bold; display: none; }
+        /* Clean Notification Bell Component */
+        .notif-container {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: #333;
+            border-radius: 50%;
+            border: 1px solid #444;
+        }
+        .notif-bell {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #e74c3c;
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 50%;
+            font-weight: bold;
+            display: none;
+        }
 
         /* Toast Popup Banner */
-        #toastBanner { visibility: hidden; min-width: 260px; background-color: #3498db; color: #fff; text-align: left; border-radius: 6px; padding: 12px 15px; position: fixed; z-index: 9999; right: 15px; bottom: 15px; font-size: 13px; font-weight: bold; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); border-left: 5px solid #111; }
-        #toastBanner.show { visibility: visible; animation: slidein 0.3s, fadeout 0.3s 3s; }
-        @keyframes slidein { from { bottom: 0; opacity: 0; } to { bottom: 15px; opacity: 1; } }
-        @keyframes fadeout { from { bottom: 15px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        #toastBanner {
+            visibility: hidden;
+            min-width: 260px;
+            background-color: #3498db;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 12px 15px;
+            position: fixed;
+            z-index: 9999;
+            right: 15px;
+            bottom: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            border-left: 5px solid #111;
+        }
+        #toastBanner.show {
+            visibility: visible;
+            animation: slidein 0.3s, fadeout 0.3s 3s;
+        }
+        @keyframes slidein {
+            from { bottom: 0; opacity: 0; }
+            to { bottom: 15px; opacity: 1; }
+        }
+        @keyframes fadeout {
+            from { bottom: 15px; opacity: 1; }
+            to { bottom: 0; opacity: 0; }
+        }
 
-        .container { padding: 25px 20px; max-width: 450px; margin: 30px auto; text-align: center; background: #242424; border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); border-top: 4px solid #2ecc71; }
-        h2 { font-size: 22px; margin-top: 0; }
-        .time-display { font-size: 45px; font-weight: bold; color: #2ecc71; margin: 15px 0; letter-spacing: 1px; }
-        .late-warning { background: rgba(231, 76, 60, 0.2); color: #e74c3c; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: none; border: 1px solid #e74c3c; }
+        .container {
+            padding: 25px 20px;
+            max-width: 450px;
+            margin: 30px auto;
+            text-align: center;
+            background: #242424;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            border-top: 4px solid #2ecc71;
+        }
+        h2 {
+            font-size: 22px;
+            margin-top: 0;
+        }
+        .time-display {
+            font-size: 45px;
+            font-weight: bold;
+            color: #2ecc71;
+            margin: 15px 0;
+            letter-spacing: 1px;
+        }
+        .late-warning {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid #e74c3c;
+        }
         
-        .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-        button.action-btn { padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        button.action-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
         .btn-out { background-color: #e74c3c; color: white; }
         .btn-leave { background-color: #3498db; color: white; }
+        .btn-holiday { background-color: #9b59b6; color: white; }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         
-        .stats { margin-top: 25px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; }
-        .stats p { margin: 8px 0; font-size: 14px; }
+        .stats {
+            margin-top: 25px;
+            text-align: left;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2ecc71;
+        }
+        .stats p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
         
-        #resetBtn { background: none; color: #3498db; border: none; text-decoration: underline; cursor: pointer; margin-top: 15px; display: none; font-size: 13px; }
-        #locationStatus { color: #f39c12; font-size: 12px; margin-top: 6px; font-weight: bold; height: 16px; }
+        #resetBtn {
+            background: none;
+            color: #3498db;
+            border: none;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 15px;
+            display: none;
+            font-size: 13px;
+        }
+        #locationStatus {
+            color: #f39c12;
+            font-size: 12px;
+            margin-top: 6px;
+            font-weight: bold;
+            height: 16px;
+        }
+
+        /* FULL SCREEN ADMIN BROADCAST MODAL */
+        #broadcastOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.94);
+            z-index: 9999999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+        .broadcast-card {
+            background: #242424;
+            border: 2px solid #e74c3c;
+            border-radius: 12px;
+            max-width: 480px;
+            width: 100%;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4);
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .broadcast-icon {
+            font-size: 45px;
+            margin-bottom: 10px;
+        }
+        .broadcast-card h3 {
+            color: #e74c3c;
+            margin: 0 0 12px 0;
+            font-size: 22px;
+            letter-spacing: 1px;
+        }
+        .broadcast-card p {
+            color: #f5f5dc;
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 0 0 25px 0;
+            white-space: pre-line;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            text-align: left;
+        }
+        .btn-ack {
+            background: #2ecc71;
+            color: #111;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .btn-ack:hover {
+            background: #27ae60;
+        }
     </style>
 </head>
 <body>
@@ -51,14 +279,24 @@
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
-            <!-- Notification Bell Redirects to Full Page -->
-            <div class="notif-container" id="notifContainer" onclick="window.location.href='employee-notifications.html'">
+            <!-- Notification Bell (Facebook Style Page Redirect) -->
+            <div class="notif-container" id="notifContainer" title="Notifications" onclick="window.location.href='employee-notifications.html'">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
             </div>
 
             <span id="welcomeMsg">Employee</span>
             <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Full-Screen Broadcast Modal -->
+    <div id="broadcastOverlay">
+        <div class="broadcast-card">
+            <div class="broadcast-icon">📢</div>
+            <h3 id="broadcastTitle">URGENT ANNOUNCEMENT</h3>
+            <p id="broadcastMsg">Admin message here...</p>
+            <button class="btn-ack" id="btnAckBroadcast">I Understand & Acknowledge</button>
         </div>
     </div>
 
@@ -77,6 +315,7 @@
             <button id="breakBtn" class="action-btn btn-break" disabled>Take Break (ON)</button>
             <button id="clockOutBtn" class="action-btn btn-out" disabled>Clock Out</button>
             <button onclick="window.location.href='employee-leaves.html'" class="action-btn btn-leave">📅 Apply / View Leaves</button>
+            <button onclick="window.location.href='employee-holidays.html'" class="action-btn btn-holiday">🏖️ Company Holidays</button>
         </div>
 
         <div class="stats">
@@ -94,7 +333,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -127,8 +366,60 @@
             workedTime: document.getElementById('totalWorkedTime'),
             resetBtn: document.getElementById('resetBtn'),
             lateWarning: document.getElementById('lateWarning'),
-            locStatus: document.getElementById('locationStatus')
+            locStatus: document.getElementById('locationStatus'),
+            broadcastOverlay: document.getElementById('broadcastOverlay'),
+            broadcastTitle: document.getElementById('broadcastTitle'),
+            broadcastMsg: document.getElementById('broadcastMsg'),
+            btnAckBroadcast: document.getElementById('btnAckBroadcast')
         };
+
+        // Custom Web Audio API Chime Tone
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } catch (e) {}
+        }
+
+        // Real-Time Full-Screen Broadcast Listener
+        function listenToAdminBroadcasts() {
+            const broadcastDocRef = doc(db, "broadcasts", "latest_broadcast");
+            onSnapshot(broadcastDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.active) {
+                        const dismissedId = localStorage.getItem('dismissed_broadcast_id');
+                        if (dismissedId !== String(data.timestamp)) {
+                            ui.broadcastTitle.innerText = data.title || "ANNOUNCEMENT FROM ADMIN";
+                            ui.broadcastMsg.innerText = data.message || "";
+                            ui.broadcastOverlay.style.display = "flex";
+                            playNotificationSound();
+                        }
+                    } else {
+                        ui.broadcastOverlay.style.display = "none";
+                    }
+                }
+            });
+        }
+
+        ui.btnAckBroadcast.addEventListener('click', async () => {
+            try {
+                const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
+                if (docSnap.exists()) {
+                    localStorage.setItem('dismissed_broadcast_id', String(docSnap.data().timestamp));
+                }
+            } catch(e) {}
+            ui.broadcastOverlay.style.display = "none";
+        });
 
         function getTodayStr() {
             const d = new Date();
@@ -163,7 +454,9 @@
                     (position) => {
                         resolve({ lat: position.coords.latitude, lng: position.coords.longitude });
                     },
-                    (error) => { resolve({ error: "Permission denied or failed" }); },
+                    (error) => {
+                        resolve({ error: "Permission denied or failed" });
+                    },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             });
@@ -183,6 +476,7 @@
                 ui.welcome.innerText = "Welcome, Employee";
                 await loadAttendance();
                 checkBadgeCount(user.uid);
+                listenToAdminBroadcasts();
             } else {
                 window.location.href = "index.html";
             }
@@ -214,7 +508,9 @@
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => { window.location.href = "index.html"; });
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
+            });
         });
 
         async function loadAttendance() {
