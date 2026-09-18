@@ -615,7 +615,6 @@
 
                 let html = "";
                 records.forEach(rec => {
-                    // Calculate past times
                     let breakMs = 0;
                     if(rec.breaks) {
                         rec.breaks.forEach(b => {
@@ -667,9 +666,7 @@
                 gain.connect(audioCtx.destination); 
                 osc.start(); 
                 osc.stop(audioCtx.currentTime + 0.5);
-            } catch (e) {
-                // Audio context not allowed or failed
-            }
+            } catch (e) {}
         }
 
         function listenToAdminBroadcasts() {
@@ -694,17 +691,31 @@
 
         ui.btnAckBroadcast.addEventListener('click', async () => {
             try {
+                const nowTime = Date.now();
+                const ackObj = {
+                    uid: currentUser.uid,
+                    name: employeeName,
+                    time: nowTime
+                };
+
                 const docRef = doc(db, "broadcasts", "latest_broadcast");
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     localStorage.setItem('dismissed_broadcast_id', String(data.timestamp));
+                    
+                    // 1. Update active broadcast
                     await updateDoc(docRef, {
-                        acknowledgements: arrayUnion({
-                            uid: currentUser.uid,
-                            name: employeeName,
-                            time: Date.now()
-                        })
+                        acknowledgements: arrayUnion(ackObj)
+                    });
+
+                    // 2. Update matching history document in broadcast_history
+                    const qHistory = query(collection(db, "broadcast_history"), where("timestamp", "==", data.timestamp));
+                    const historySnap = await getDocs(qHistory);
+                    historySnap.forEach(async (historyDoc) => {
+                        await updateDoc(doc(db, "broadcast_history", historyDoc.id), {
+                            acknowledgements: arrayUnion(ackObj)
+                        });
                     });
                 }
             } catch (e) {
@@ -756,11 +767,7 @@
                         if(error.code === 3) errMsg = "GPS Timeout - Signal weak";
                         resolve({ error: errMsg });
                     },
-                    { 
-                        enableHighAccuracy: true, 
-                        timeout: 25000, 
-                        maximumAge: 0 
-                    }
+                    { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
                 );
             });
         }
