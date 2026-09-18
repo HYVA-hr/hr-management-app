@@ -27,10 +27,10 @@
         .stat-row span { color: #aaa; }
         .stat-row strong { color: #fff; }
         
-        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #1a1a1a; padding: 8px; border-radius: 4px; }
-        .input-row input { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; text-align: center; }
+        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #1a1a1a; padding: 8px 12px; border-radius: 4px; }
+        .input-row input { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; text-align: center; font-weight: bold; }
         
-        .final-salary { font-size: 24px; font-weight: bold; color: #2ecc71; text-align: center; margin-top: 15px; }
+        .final-salary { font-size: 26px; font-weight: bold; color: #2ecc71; text-align: center; margin-top: 15px; background: #111; padding: 10px; border-radius: 6px; border: 1px solid #2ecc71; }
     </style>
 </head>
 <body>
@@ -47,11 +47,11 @@
                 <input type="month" id="monthFilter">
             </div>
             <div style="margin-top: 20px;">
-                <button id="generateBtn">Generate Salary Data</button>
+                <button id="generateBtn">Calculate Payroll</button>
             </div>
         </div>
 
-        <div id="loadingMsg" style="text-align: center; color: #aaa; display: none;">Calculating payroll data...</div>
+        <div id="loadingMsg" style="text-align: center; color: #aaa; display: none;">Fetching attendance, leaves & holidays...</div>
         <div class="grid" id="salaryGrid"></div>
     </div>
 
@@ -113,17 +113,33 @@
             const startDate = `${monthStr}-01`;
             const endDate = `${monthStr}-${daysInMonth}`;
 
+            // Step 1: Count Weekends (Saturdays and Sundays) 5-Days Working Rule
+            let weekendsCount = 0;
+            for (let i = 1; i <= daysInMonth; i++) {
+                let d = new Date(year, month - 1, i);
+                if (d.getDay() === 0 || d.getDay() === 6) weekendsCount++; // 0=Sun, 6=Sat
+            }
+
             try {
+                // Step 2: Fetch Attendance & Calculate Half Day Penalties
                 const attQ = query(collection(db, "attendance"), where("date", ">=", startDate), where("date", "<=", endDate));
                 const attSnap = await getDocs(attQ);
                 let attCountMap = {};
+                let penaltyMap = {}; // User UID -> count of 0.5 penalties
+
                 attSnap.forEach(doc => {
                     const data = doc.data();
                     if(data.status === "COMPLETED" || data.status === "WORKING") {
                         attCountMap[data.userId] = (attCountMap[data.userId] || 0) + 1;
+                        
+                        // If marked late and admin didn't revoke it, add 0.5 days penalty
+                        if(data.halfDayMarked && !data.adminRevokedLate) {
+                            penaltyMap[data.userId] = (penaltyMap[data.userId] || 0) + 0.5;
+                        }
                     }
                 });
 
+                // Step 3: Fetch Leaves
                 const leaveSnap = await getDocs(collection(db, "leaves"));
                 let leaveCountMap = {};
                 leaveSnap.forEach(doc => {
@@ -133,15 +149,34 @@
                     }
                 });
 
+                // Step 4: Fetch Company Holidays (Exclude weekends from counting double)
+                const holQ = query(collection(db, "holidays"), where("date", ">=", startDate), where("date", "<=", endDate));
+                const holSnap = await getDocs(holQ);
+                let holidaysCount = 0;
+                holSnap.forEach(doc => {
+                    let holDate = new Date(doc.data().date);
+                    if(holDate.getDay() !== 0 && holDate.getDay() !== 6) { 
+                        holidaysCount++;
+                    }
+                });
+
                 loading.style.display = "none";
 
                 allEmployees.forEach(emp => {
                     const baseSalary = emp.baseSalary || 0;
                     const presentDays = attCountMap[emp.id] || 0;
+                    const halfDayPenalties = penaltyMap[emp.id] || 0;
                     const approvedLeaves = leaveCountMap[emp.id] || 0;
                     
-                    // FIXED: Undefined name bug logic
                     const displayName = (emp.name && emp.name !== "undefined") ? emp.name : (emp.email || "Unknown Employee");
+
+                    // AUTO LOP CALCULATION 
+                    // Missing Days = Total Month - (Present + Leaves + Weekends + Holidays)
+                    let autoLop = daysInMonth - (presentDays + approvedLeaves + weekendsCount + holidaysCount);
+                    if (autoLop < 0) autoLop = 0; 
+                    
+                    // Add half-day late penalties to the Unpaid Days
+                    autoLop += halfDayPenalties;
                     
                     const card = document.createElement('div');
                     card.className = "salary-card";
@@ -151,14 +186,17 @@
                         <div class="stat-row"><span>Base Salary:</span> <strong>₹${baseSalary.toLocaleString()}</strong></div>
                         <div class="stat-row"><span>Days in Month:</span> <strong>${daysInMonth} Days</strong></div>
                         <hr>
-                        <div class="stat-row"><span>Total Present (Punched In):</span> <strong>${presentDays} Days</strong></div>
+                        <div class="stat-row"><span>Total Present (Punched In):</span> <strong style="color:#2ecc71;">${presentDays} Days</strong></div>
                         <div class="stat-row"><span>Approved Leaves (Paid):</span> <strong>${approvedLeaves} Days</strong></div>
+                        <div class="stat-row"><span>Weekends (Sat/Sun Paid):</span> <strong>${weekendsCount} Days</strong></div>
+                        <div class="stat-row"><span>Company Holidays (Paid):</span> <strong>${holidaysCount} Days</strong></div>
+                        ${halfDayPenalties > 0 ? `<div class="stat-row" style="color:#e74c3c;"><span>Late Penalty Deductions:</span> <strong>${halfDayPenalties} Days</strong></div>` : ""}
                         
-                        <div class="input-row" style="margin-top: 15px;">
-                            <span>Loss of Pay / Unpaid Absents (Days):</span>
-                            <input type="number" id="lop_${emp.id}" value="0" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
+                        <div class="input-row" style="margin-top: 15px; border-left: 3px solid #e74c3c;">
+                            <span style="color: #e74c3c; font-weight: bold;">Unpaid Days (Auto LOP):</span>
+                            <input type="number" step="0.5" id="lop_${emp.id}" value="${autoLop}" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
                         </div>
-                        <div class="input-row">
+                        <div class="input-row" style="border-left: 3px solid #f39c12;">
                             <span>Add Bonus / Allowance (₹):</span>
                             <input type="number" id="bonus_${emp.id}" value="0" min="0" onchange="calculateNet('${emp.id}', ${baseSalary}, ${daysInMonth})">
                         </div>
@@ -168,6 +206,7 @@
                         </div>
                     `;
                     grid.appendChild(card);
+                    
                     window.calculateNet(emp.id, baseSalary, daysInMonth);
                 });
 
@@ -188,7 +227,7 @@
             let netSalary = baseSalary - deductions + bonus;
             if(netSalary < 0) netSalary = 0;
             
-            document.getElementById(`net_${empId}`).innerText = `₹${Math.round(netSalary).toLocaleString()}`;
+            document.getElementById(`net_${empId}`).innerText = `Net Pay: ₹${Math.round(netSalary).toLocaleString()}`;
         }
     </script>
 </body>
