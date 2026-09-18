@@ -57,7 +57,7 @@
             background-color: #c0392b;
         }
         
-        /* Clean Notification Bell & Right-Aligned Dropdown */
+        /* Clean Notification Bell & Properly Positioned Dropdown */
         .notif-container {
             position: relative;
             cursor: pointer;
@@ -85,13 +85,13 @@
         .notif-dropdown {
             position: absolute;
             right: 0;
-            left: auto;
-            top: 45px;
-            width: 260px;
+            top: 100%;
+            margin-top: 8px;
+            width: 250px;
             background: #242424;
             border: 1px solid #444;
             border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
             display: none;
             z-index: 99999;
             max-height: 300px;
