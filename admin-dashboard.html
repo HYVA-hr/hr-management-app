@@ -32,6 +32,81 @@
         .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(46, 204, 113, 0.2); }
         .card h3 { margin: 10px 0; color: #2ecc71; font-size: 20px; }
         .card p { margin: 8px 0 0 0; color: #ccc; font-size: 14px; line-height: 1.4; }
+
+        /* Admin Broadcast Modal Dialog */
+        #adminBroadcastModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .broadcast-admin-box {
+            background: #242424;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 480px;
+            width: 100%;
+            border-top: 5px solid #e74c3c;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        }
+        .broadcast-admin-box h3 {
+            margin-top: 0;
+            color: #e74c3c;
+            font-size: 20px;
+        }
+        .broadcast-admin-box input, .broadcast-admin-box textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .btn-push {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .btn-stop-push {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .btn-close-modal {
+            background: transparent;
+            color: #aaa;
+            border: none;
+            text-decoration: underline;
+            cursor: pointer;
+            width: 100%;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +122,24 @@
 
             <span id="welcomeMsg">Loading...</span>
             <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Admin Broadcast Modal -->
+    <div id="adminBroadcastModal">
+        <div class="broadcast-admin-box">
+            <h3>📢 Broadcast Full-Screen Message</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0 0 10px 0;">This alert will pop up full-screen on all active employees' phones/screens with chime sound.</p>
+            
+            <label style="font-size: 13px; color: #ccc;">Announcement Title:</label>
+            <input type="text" id="bcTitleInput" placeholder="e.g., URGENT MEETING AT 4:00 PM">
+            
+            <label style="font-size: 13px; color: #ccc;">Message / Instructions:</label>
+            <textarea id="bcMsgInput" rows="4" placeholder="Type instructions here..."></textarea>
+            
+            <button class="btn-push" id="btnPushBroadcast">🚀 Push Message to All Employees</button>
+            <button class="btn-stop-push" id="btnStopBroadcast">🛑 Deactivate / Clear Current Alert</button>
+            <button class="btn-close-modal" id="btnCloseModal">Cancel / Close</button>
         </div>
     </div>
 
@@ -77,13 +170,17 @@
                 <h3>🏖️ Holiday Calendar</h3>
                 <p>Set company holidays and non-working days.</p>
             </div>
+            <div class="card" style="border-top-color: #e74c3c;" onclick="document.getElementById('adminBroadcastModal').style.display='flex'">
+                <h3 style="color: #e74c3c;">📢 Push Announcement</h3>
+                <p>Send an instant full-screen alert to all employees.</p>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -98,7 +195,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 1. Web Audio API Custom Tone
+        // Web Audio API Custom Tone
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -115,7 +212,7 @@
             } catch(e) {}
         }
 
-        // 2. Browser Native Web Push Permission Request
+        // Browser Native Web Push Permission Request
         if (window.Notification && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
@@ -134,6 +231,42 @@
                 new Notification(title, { body: body, icon: 'logo.png' });
             }
         }
+
+        // Broadcast Modal handlers
+        const modal = document.getElementById('adminBroadcastModal');
+        document.getElementById('btnCloseModal').addEventListener('click', () => { modal.style.display = 'none'; });
+        
+        document.getElementById('btnPushBroadcast').addEventListener('click', async () => {
+            const title = document.getElementById('bcTitleInput').value.trim() || "COMPANY ANNOUNCEMENT";
+            const message = document.getElementById('bcMsgInput').value.trim();
+            if (!message) {
+                alert("Please enter a message to broadcast!");
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, "broadcasts", "latest_broadcast"), {
+                    title: title,
+                    message: message,
+                    timestamp: Date.now(),
+                    active: true
+                });
+                alert("🚀 Announcement pushed live to all employees!");
+                modal.style.display = 'none';
+            } catch (err) {
+                alert("Error sending broadcast: " + err.message);
+            }
+        });
+
+        document.getElementById('btnStopBroadcast').addEventListener('click', async () => {
+            try {
+                await updateDoc(doc(db, "broadcasts", "latest_broadcast"), { active: false });
+                alert("🛑 Active announcement deactivated!");
+                modal.style.display = 'none';
+            } catch(err) {
+                alert("Error: " + err.message);
+            }
+        });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
