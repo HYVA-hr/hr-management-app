@@ -700,23 +700,21 @@
 
                 const docRef = doc(db, "broadcasts", "latest_broadcast");
                 const docSnap = await getDoc(docRef);
+                
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     localStorage.setItem('dismissed_broadcast_id', String(data.timestamp));
                     
-                    // 1. Update active broadcast
+                    // 1. Update active broadcast document
                     await updateDoc(docRef, {
                         acknowledgements: arrayUnion(ackObj)
                     });
 
-                    // 2. Update matching history document in broadcast_history
-                    const qHistory = query(collection(db, "broadcast_history"), where("timestamp", "==", data.timestamp));
-                    const historySnap = await getDocs(qHistory);
-                    historySnap.forEach(async (historyDoc) => {
-                        await updateDoc(doc(db, "broadcast_history", historyDoc.id), {
-                            acknowledgements: arrayUnion(ackObj)
-                        });
-                    });
+                    // 2. Update matching history document directly by timestamp ID (CRITICAL FIX)
+                    const historyDocRef = doc(db, "broadcast_history", String(data.timestamp));
+                    await updateDoc(historyDocRef, {
+                        acknowledgements: arrayUnion(ackObj)
+                    }).catch(e => console.log("History doc skip (old structure)", e));
                 }
             } catch (e) {
                 console.error("Error acknowledging broadcast", e);
