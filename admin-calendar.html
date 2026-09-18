@@ -31,11 +31,32 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
         }
 
-        .header img { max-height: 45px; border-radius: 4px; }
-        .btn-back { background-color: #555; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; font-size: 14px; }
-        .btn-back:hover { background-color: #777; }
+        .header img { 
+            max-height: 45px; 
+            border-radius: 4px; 
+        }
+
+        .btn-back { 
+            background-color: #555; 
+            color: white; 
+            border: none; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            text-decoration: none; 
+            font-weight: bold; 
+            font-size: 14px; 
+        }
+
+        .btn-back:hover { 
+            background-color: #777; 
+        }
         
-        .container { padding: 15px; max-width: 900px; margin: 10px auto; }
+        .container { 
+            padding: 15px; 
+            max-width: 900px; 
+            margin: 10px auto; 
+        }
         
         /* Calendar UI Styles */
         .calendar-card { 
@@ -55,12 +76,25 @@
             border-bottom: 1px solid #333;
         }
 
-        .cal-header h2 { margin: 0; color: #3498db; font-size: 22px; }
-        .cal-btn { 
-            background: #333; color: white; border: 1px solid #444; 
-            padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; 
+        .cal-header h2 { 
+            margin: 0; 
+            color: #3498db; 
+            font-size: 22px; 
         }
-        .cal-btn:hover { background: #444; }
+
+        .cal-btn { 
+            background: #333; 
+            color: white; 
+            border: 1px solid #444; 
+            padding: 8px 15px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        .cal-btn:hover { 
+            background: #444; 
+        }
 
         .cal-weekdays { 
             display: grid; 
@@ -72,8 +106,15 @@
             color: #aaa;
             border-bottom: 1px solid #333;
         }
-        .cal-weekdays div { padding: 10px 0; border-right: 1px solid #333; }
-        .cal-weekdays div:last-child { border-right: none; }
+
+        .cal-weekdays div { 
+            padding: 10px 0; 
+            border-right: 1px solid #333; 
+        }
+
+        .cal-weekdays div:last-child { 
+            border-right: none; 
+        }
 
         .cal-grid { 
             display: grid; 
@@ -90,8 +131,14 @@
             background: #242424;
             transition: background 0.2s;
         }
-        .cal-day:hover { background: #2a2a2a; }
-        .cal-day.empty-day { background: #1a1a1a; }
+
+        .cal-day:hover { 
+            background: #2a2a2a; 
+        }
+
+        .cal-day.empty-day { 
+            background: #1a1a1a; 
+        }
         
         .day-number { 
             font-size: 14px; 
@@ -105,6 +152,7 @@
             text-align: center;
             border-radius: 50%;
         }
+
         .cal-day.today .day-number { 
             background: #3498db; 
             color: white; 
@@ -123,30 +171,95 @@
             text-overflow: ellipsis;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
+
         .event-holiday { background: #9b59b6; border-left: 3px solid #8e44ad; }
-        .event-birthday { background: #f39c12; border-left: 3px solid #d35400; color: #111;}
+        .event-birthday { background: #f39c12; border-left: 3px solid #d35400; color: #111; }
         .event-leave { background: #e74c3c; border-left: 3px solid #c0392b; }
 
         /* Legend */
         .legend {
-            display: flex; gap: 15px; justify-content: center; padding: 15px; flex-wrap: wrap;
-            background: #1f1f1f; border-top: 1px solid #333; font-size: 13px;
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            padding: 15px; 
+            flex-wrap: wrap;
+            background: #1f1f1f; 
+            border-top: 1px solid #333; 
+            font-size: 13px;
         }
-        .legend-item { display: flex; align-items: center; gap: 5px; color: #aaa; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            color: #aaa; 
+        }
+
+        .dot { 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            display: inline-block; 
+        }
 
         /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #242424; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #aaa; text-decoration: none; font-size: 12px; cursor: pointer; transition: 0.3s; }
-        .nav-item:hover { background: #1a1a1a; color: #fff; }
-        .nav-item.active { color: #3498db; border-top: 3px solid #3498db; margin-top: -3px; font-weight: bold; }
-        .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: #242424; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            border-top: 1px solid #333; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5); 
+            z-index: 100; 
+        }
+
+        .nav-item { 
+            flex: 1; 
+            text-align: center; 
+            padding: 12px 0; 
+            color: #aaa; 
+            text-decoration: none; 
+            font-size: 12px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+        }
+
+        .nav-item:hover { 
+            background: #1a1a1a; 
+            color: #fff; 
+        }
+
+        .nav-item.active { 
+            color: #3498db; 
+            border-top: 3px solid #3498db; 
+            margin-top: -3px; 
+            font-weight: bold; 
+        }
+
+        .nav-icon { 
+            font-size: 20px; 
+            display: block; 
+            margin-bottom: 4px; 
+        }
         
         /* Loading Overlay */
         #loadingOverlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(36, 36, 36, 0.8); display: none; justify-content: center;
-            align-items: center; font-weight: bold; color: #3498db; z-index: 10;
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(36, 36, 36, 0.8); 
+            display: none; 
+            justify-content: center;
+            align-items: center; 
+            font-weight: bold; 
+            color: #3498db; 
+            z-index: 10;
         }
         
         @media (max-width: 600px) {
@@ -169,7 +282,7 @@
             
             <div class="cal-header">
                 <button class="cal-btn" id="prevMonthBtn">◀ Prev</button>
-                <h2 id="monthYearDisplay">January 2026</h2>
+                <h2 id="monthYearDisplay">Loading...</h2>
                 <button class="cal-btn" id="nextMonthBtn">Next ▶</button>
             </div>
             
@@ -229,14 +342,16 @@
 
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
-        let allEvents = {}; // Structure: { "YYYY-MM-DD": [ {title, type} ] }
+        let allEvents = {}; 
 
         onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "index.html";
-            else fetchAllCalendarData();
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                fetchAllCalendarData();
+            }
         });
 
-        // Add event to dictionary safely
         function addEvent(dateStr, title, type) {
             if (!allEvents[dateStr]) {
                 allEvents[dateStr] = [];
@@ -244,13 +359,12 @@
             allEvents[dateStr].push({ title, type });
         }
 
-        // Generate date string array for multiple leave days
         function getDatesInRange(startStr, endStr) {
             let dates = [];
             let curr = new Date(startStr);
             let end = new Date(endStr);
             while (curr <= end) {
-                dates.push(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+                dates.push(`${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`);
                 curr.setDate(curr.getDate() + 1);
             }
             return dates;
@@ -258,48 +372,48 @@
 
         async function fetchAllCalendarData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
-            allEvents = {}; // Reset
+            allEvents = {}; 
 
             try {
-                // 1. Fetch Holidays
+                // 1. Fetch Employees for Names & Birthdays mapping
+                const employeeMap = {};
+                const empSnap = await getDocs(collection(db, "employees"));
+                empSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    employeeMap[docSnap.id] = data.name && data.name !== "undefined" ? data.name : (data.email || "Employee");
+                    
+                    if(data.dob && data.role !== "ADMIN") {
+                        const parts = data.dob.split('-'); 
+                        if(parts.length === 3) {
+                            const bdayThisYear = `${currentYear}-${parts[1]}-${parts[2]}`;
+                            const empName = employeeMap[docSnap.id];
+                            addEvent(bdayThisYear, `🎂 ${empName}'s B'day`, 'birthday');
+                        }
+                    }
+                });
+
+                // 2. Fetch Holidays
                 const holSnap = await getDocs(collection(db, "holidays"));
-                holSnap.forEach(doc => {
-                    const data = doc.data();
+                holSnap.forEach(docSnap => {
+                    const data = docSnap.data();
                     if(data.date) {
                         addEvent(data.date, `🏖️ ${data.name || 'Holiday'}`, 'holiday');
                     }
                 });
 
-                // 2. Fetch Birthdays
-                const empSnap = await getDocs(collection(db, "employees"));
-                empSnap.forEach(doc => {
-                    const data = doc.data();
-                    if(data.dob && data.role !== "ADMIN") {
-                        const parts = data.dob.split('-'); // Expects YYYY-MM-DD
-                        if(parts.length === 3) {
-                            // Sync birthday to current year for display
-                            const bdayThisYear = `${currentYear}-${parts[1]}-${parts[2]}`;
-                            const name = data.name && data.name !== "undefined" ? data.name : "Employee";
-                            addEvent(bdayThisYear, `🎂 ${name}'s B'day`, 'birthday');
-                        }
-                    }
-                });
-
-                // 3. Fetch Approved Leaves
+                // 3. Fetch Approved Leaves with correct Employee Name mapping
                 const qLeaves = query(collection(db, "leaves"), where("status", "==", "APPROVED"));
                 const leaveSnap = await getDocs(qLeaves);
-                leaveSnap.forEach(doc => {
-                    const data = doc.data();
-                    const empName = data.name || 'Employee';
+                leaveSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const empName = employeeMap[data.uid] || data.name || 'Employee';
                     
                     if (data.fromDate && data.toDate) {
-                        // Date Range Logic
                         const range = getDatesInRange(data.fromDate, data.toDate);
                         range.forEach(dateStr => {
                             addEvent(dateStr, `🌴 ${empName} (Leave)`, 'leave');
                         });
                     } else if (data.date) {
-                        // Single Date Logic
                         addEvent(data.date, `🌴 ${empName} (Leave)`, 'leave');
                     }
                 });
@@ -324,7 +438,7 @@
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             
             const today = new Date();
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
             // Blank spaces for days before 1st of month
             for (let i = 0; i < firstDay; i++) {
@@ -333,21 +447,20 @@
                 grid.appendChild(emptyDiv);
             }
 
-            // Actual days
+            // Actual days of the month
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'cal-day';
                 
-                const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
-                if(dateStr === todayStr) {
+                if (dateStr === todayStr) {
                     dayDiv.classList.add('today');
                 }
 
                 let html = `<span class="day-number">${day}</span>`;
                 
-                // Add Events if exist
-                if(allEvents[dateStr]) {
+                if (allEvents[dateStr]) {
                     allEvents[dateStr].forEach(ev => {
                         html += `<div class="event-pill event-${ev.type}" title="${ev.title}">${ev.title}</div>`;
                     });
@@ -360,14 +473,20 @@
 
         document.getElementById('prevMonthBtn').addEventListener('click', () => {
             currentMonth--;
-            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-            fetchAllCalendarData(); // Refetch to calculate leap years/birthdays properly
+            if (currentMonth < 0) { 
+                currentMonth = 11; 
+                currentYear--; 
+            }
+            fetchAllCalendarData(); 
         });
 
         document.getElementById('nextMonthBtn').addEventListener('click', () => {
             currentMonth++;
-            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-            fetchAllCalendarData(); // Refetch
+            if (currentMonth > 11) { 
+                currentMonth = 0; 
+                currentYear++; 
+            }
+            fetchAllCalendarData(); 
         });
     </script>
 </body>
