@@ -12,51 +12,272 @@
     <meta name="apple-mobile-web-app-title" content="HireYourVA">
     <link rel="apple-touch-icon" href="logo.png">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 15px; }
-        .header { background-color: #242424; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .header img { max-height: 45px; border-radius: 4px; }
-        .btn-back { background-color: #555; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; font-size: 14px; }
-        .btn-back:hover { background-color: #777; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #1a1a1a; 
+            color: #f5f5dc; 
+            margin: 0; 
+            padding: 0; 
+            font-size: 15px; 
+        }
+
+        .header { 
+            background-color: #242424; 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        }
+
+        .header img { 
+            max-height: 45px; 
+            border-radius: 4px; 
+        }
+
+        .btn-back { 
+            background-color: #555; 
+            color: white; 
+            border: none; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            text-decoration: none; 
+            font-weight: bold; 
+            font-size: 14px; 
+        }
+
+        .btn-back:hover { 
+            background-color: #777; 
+        }
         
-        .container { padding: 15px; max-width: 800px; margin: 10px auto; }
-        .card { background: #242424; padding: 20px; border-radius: 10px; border-top: 4px solid #2ecc71; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        h2 { margin-top: 0; color: #2ecc71; font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+        .container { 
+            padding: 15px; 
+            max-width: 800px; 
+            margin: 10px auto; 
+        }
+
+        .card { 
+            background: #242424; 
+            padding: 20px; 
+            border-radius: 10px; 
+            border-top: 4px solid #2ecc71; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); 
+        }
+
+        h2 { 
+            margin-top: 0; 
+            color: #2ecc71; 
+            font-size: 20px; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 8px; 
+        }
         
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; gap: 10px; } }
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+
+        @media (max-width: 600px) { 
+            .form-grid { 
+                grid-template-columns: 1fr; 
+                gap: 10px; 
+            } 
+        }
         
-        .input-group { display: flex; flex-direction: column; text-align: left; }
-        label { font-size: 13px; color: #aaa; margin-bottom: 4px; font-weight: 500; }
-        input, select, textarea { padding: 10px; border: 1px solid #444; border-radius: 6px; background-color: #333; color: white; font-size: 14px; width: 100%; box-sizing: border-box; }
+        .input-group { 
+            display: flex; 
+            flex-direction: column; 
+            text-align: left; 
+        }
+
+        label { 
+            font-size: 13px; 
+            color: #aaa; 
+            margin-bottom: 4px; 
+            font-weight: 500; 
+        }
+
+        input, select, textarea { 
+            padding: 10px; 
+            border: 1px solid #444; 
+            border-radius: 6px; 
+            background-color: #333; 
+            color: white; 
+            font-size: 14px; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
         
-        button.submit-btn { width: 100%; padding: 12px; background-color: #2ecc71; color: #111; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s; }
-        button.submit-btn:hover { background-color: #27ae60; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
-        #statusMsg { text-align: center; margin-top: 10px; font-weight: bold; font-size: 14px; }
+        button.submit-btn { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #2ecc71; 
+            color: #111; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 15px; 
+            transition: 0.3s; 
+        }
+
+        button.submit-btn:hover { 
+            background-color: #27ae60; 
+        }
+
+        button:disabled { 
+            background-color: #555; 
+            cursor: not-allowed; 
+        }
+
+        #statusMsg { 
+            text-align: center; 
+            margin-top: 10px; 
+            font-weight: bold; 
+            font-size: 14px; 
+        }
         
-        .section-title { grid-column: 1 / -1; margin-top: 8px; color: #2ecc71; border-bottom: 1px solid #444; padding-bottom: 4px; font-size: 15px; font-weight: bold; }
+        .section-title { 
+            grid-column: 1 / -1; 
+            margin-top: 8px; 
+            color: #2ecc71; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 4px; 
+            font-size: 15px; 
+            font-weight: bold; 
+        }
         
         /* Employee List Grid */
-        .emp-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-top: 15px; }
-        .emp-item { background: #1a1a1a; padding: 12px; border-radius: 8px; border-left: 4px solid #2ecc71; position: relative; display: flex; flex-direction: column; }
-        .emp-item.blocked { border-left-color: #e74c3c; opacity: 0.7; }
-        .emp-item h4 { margin: 0 0 4px 0; color: #fff; font-size: 15px; }
-        .emp-item p { margin: 2px 0; font-size: 12px; color: #aaa; }
+        .emp-list-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 12px; 
+            margin-top: 15px; 
+        }
+
+        .emp-item { 
+            background: #1a1a1a; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border-left: 4px solid #2ecc71; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .emp-item.blocked { 
+            border-left-color: #e74c3c; 
+            opacity: 0.7; 
+        }
+
+        .emp-item h4 { 
+            margin: 0 0 4px 0; 
+            color: #fff; 
+            font-size: 15px; 
+        }
+
+        .emp-item p { 
+            margin: 2px 0; 
+            font-size: 12px; 
+            color: #aaa; 
+        }
         
-        .action-buttons { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-        .btn-toggle { width: 100%; padding: 6px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .action-buttons { 
+            margin-top: auto; 
+            padding-top: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+        }
+
+        .btn-toggle { 
+            width: 100%; 
+            padding: 6px; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 12px; 
+        }
+
         .btn-block { background: #e74c3c; color: white; }
         .btn-unblock { background: #2ecc71; color: #111; }
-        .btn-edit { background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; width: 100%; }
-        .btn-edit:hover { background: #2980b9; }
+        
+        .btn-edit { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 12px; 
+            width: 100%; 
+        }
+
+        .btn-edit:hover { 
+            background: #2980b9; 
+        }
 
         /* Edit Modal Styles */
-        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
-        .modal-content { background: #242424; padding: 20px; border-radius: 10px; border-top: 4px solid #3498db; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .modal-header h3 { margin: 0; color: #3498db; }
-        .close-btn { background: transparent; color: #aaa; border: none; font-size: 24px; cursor: pointer; line-height: 1; padding: 0; }
-        .close-btn:hover { color: #fff; }
+        .modal-overlay { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.8); 
+            justify-content: center; 
+            align-items: center; 
+            padding: 15px; 
+            box-sizing: border-box; 
+        }
+
+        .modal-content { 
+            background: #242424; 
+            padding: 20px; 
+            border-radius: 10px; 
+            border-top: 4px solid #3498db; 
+            width: 100%; 
+            max-width: 600px; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 10px; 
+        }
+
+        .modal-header h3 { 
+            margin: 0; 
+            color: #3498db; 
+        }
+
+        .close-btn { 
+            background: transparent; 
+            color: #aaa; 
+            border: none; 
+            font-size: 24px; 
+            cursor: pointer; 
+            line-height: 1; 
+            padding: 0; 
+        }
+
+        .close-btn:hover { 
+            color: #fff; 
+        }
     </style>
 </head>
 <body>
@@ -147,17 +368,31 @@
                 <h3>Edit Employee Profile</h3>
                 <button class="close-btn" onclick="closeEditModal()">&times;</button>
             </div>
+            
             <form id="editEmployeeForm">
                 <input type="hidden" id="editUid">
-                <div class="input-group">
-                    <label>Full Name</label>
-                    <input type="text" id="editName" required>
-                </div>
-                <div class="input-group">
-                    <label>Phone Number</label>
-                    <input type="text" id="editPhone" required>
-                </div>
+                
                 <div class="form-grid">
+                    <div class="input-group">
+                        <label>Employee ID</label>
+                        <input type="text" id="editEmpId" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="text" id="editPhone" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Date of Joining (DOJ)</label>
+                        <input type="date" id="editDoj" required>
+                    </div>
                     <div class="input-group">
                         <label>Department</label>
                         <input type="text" id="editDepartment" required>
@@ -171,10 +406,12 @@
                         <input type="number" id="editSalary" required>
                     </div>
                 </div>
+                
                 <div class="input-group" style="margin-top: 12px;">
                     <label>Full Address</label>
                     <textarea id="editAddress" rows="2" required></textarea>
                 </div>
+                
                 <button type="submit" class="submit-btn" id="saveEditBtn" style="background: #3498db; color: white;">Save Changes</button>
             </form>
         </div>
@@ -205,8 +442,11 @@
         window.employeeCache = {};
 
         onAuthStateChanged(mainAuth, (user) => {
-            if (!user) window.location.href = "index.html";
-            else fetchEmployeesDirectory();
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                fetchEmployeesDirectory();
+            }
         });
 
         async function fetchEmployeesDirectory() {
@@ -264,6 +504,13 @@
             if(!emp) return;
 
             document.getElementById('editUid').value = uid;
+            
+            // Populate New Fields
+            document.getElementById('editEmpId').value = emp.employeeId || '';
+            document.getElementById('editEmail').value = emp.email || '';
+            document.getElementById('editDoj').value = emp.doj || '';
+            
+            // Populate Existing Fields
             document.getElementById('editName').value = (emp.name && emp.name !== "undefined") ? emp.name : '';
             document.getElementById('editPhone').value = emp.phone || '';
             document.getElementById('editDepartment').value = emp.department || '';
@@ -288,6 +535,9 @@
 
             try {
                 await updateDoc(doc(db, "employees", uid), {
+                    employeeId: document.getElementById('editEmpId').value,
+                    email: document.getElementById('editEmail').value,
+                    doj: document.getElementById('editDoj').value,
                     name: document.getElementById('editName').value,
                     phone: document.getElementById('editPhone').value,
                     department: document.getElementById('editDepartment').value,
