@@ -38,13 +38,25 @@
         
         /* Employee List Grid */
         .emp-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-top: 15px; }
-        .emp-item { background: #1a1a1a; padding: 12px; border-radius: 8px; border-left: 4px solid #2ecc71; position: relative; }
+        .emp-item { background: #1a1a1a; padding: 12px; border-radius: 8px; border-left: 4px solid #2ecc71; position: relative; display: flex; flex-direction: column; }
         .emp-item.blocked { border-left-color: #e74c3c; opacity: 0.7; }
         .emp-item h4 { margin: 0 0 4px 0; color: #fff; font-size: 15px; }
         .emp-item p { margin: 2px 0; font-size: 12px; color: #aaa; }
-        .btn-toggle { width: 100%; margin-top: 8px; padding: 6px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        
+        .action-buttons { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .btn-toggle { width: 100%; padding: 6px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
         .btn-block { background: #e74c3c; color: white; }
         .btn-unblock { background: #2ecc71; color: #111; }
+        .btn-edit { background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; width: 100%; }
+        .btn-edit:hover { background: #2980b9; }
+
+        /* Edit Modal Styles */
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: #242424; padding: 20px; border-radius: 10px; border-top: 4px solid #3498db; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; color: #3498db; }
+        .close-btn { background: transparent; color: #aaa; border: none; font-size: 24px; cursor: pointer; line-height: 1; padding: 0; }
+        .close-btn:hover { color: #fff; }
     </style>
 </head>
 <body>
@@ -128,6 +140,46 @@
         </div>
     </div>
 
+    <!-- Edit Employee Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Employee Profile</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editEmployeeForm">
+                <input type="hidden" id="editUid">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="input-group">
+                    <label>Phone Number</label>
+                    <input type="text" id="editPhone" required>
+                </div>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Department</label>
+                        <input type="text" id="editDepartment" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Designation</label>
+                        <input type="text" id="editDesignation" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Base Salary (₹)</label>
+                        <input type="number" id="editSalary" required>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 12px;">
+                    <label>Full Address</label>
+                    <textarea id="editAddress" rows="2" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn" id="saveEditBtn" style="background: #3498db; color: white;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -149,6 +201,9 @@
         const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
         const secondaryAuth = getAuth(secondaryApp);
 
+        // Global Cache to hold employee data for editing
+        window.employeeCache = {};
+
         onAuthStateChanged(mainAuth, (user) => {
             if (!user) window.location.href = "index.html";
             else fetchEmployeesDirectory();
@@ -161,24 +216,33 @@
                 let html = '<div class="emp-list-grid">';
                 
                 let count = 0;
+                window.employeeCache = {}; // Clear cache
+
                 querySnapshot.forEach((docSnap) => {
                     const emp = docSnap.data();
                     if(emp.role === "ADMIN") return;
                     count++;
+                    
+                    window.employeeCache[docSnap.id] = emp; // Store for edit modal
                     
                     const isActive = emp.isActive !== false;
                     const statusClass = isActive ? "" : "blocked";
                     const btnClass = isActive ? "btn-block" : "btn-unblock";
                     const btnText = isActive ? "Terminate / Block" : "Unblock / Restore";
                     const statusText = isActive ? '<span style="color:#2ecc71;">● Active</span>' : '<span style="color:#e74c3c;">● Terminated</span>';
+                    const displayName = (emp.name && emp.name !== "undefined") ? emp.name : (emp.email || "Unknown");
 
                     html += `
                         <div class="emp-item ${statusClass}">
-                            <h4>${emp.name || emp.email}</h4>
+                            <h4>${displayName}</h4>
                             <p><strong>ID:</strong> ${emp.employeeId || 'N/A'}</p>
                             <p><strong>Dept:</strong> ${emp.department || 'N/A'}</p>
                             <p>Status: ${statusText}</p>
-                            <button class="btn-toggle ${btnClass}" onclick="toggleEmployeeStatus('${docSnap.id}', ${isActive})">${btnText}</button>
+                            
+                            <div class="action-buttons">
+                                <button class="btn-edit" onclick="openEditModal('${docSnap.id}')">✏️ Edit Profile</button>
+                                <button class="btn-toggle ${btnClass}" onclick="toggleEmployeeStatus('${docSnap.id}', ${isActive})">${btnText}</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -194,6 +258,56 @@
             }
         }
 
+        // --- Edit Modal Functions ---
+        window.openEditModal = function(uid) {
+            const emp = window.employeeCache[uid];
+            if(!emp) return;
+
+            document.getElementById('editUid').value = uid;
+            document.getElementById('editName').value = (emp.name && emp.name !== "undefined") ? emp.name : '';
+            document.getElementById('editPhone').value = emp.phone || '';
+            document.getElementById('editDepartment').value = emp.department || '';
+            document.getElementById('editDesignation').value = emp.designation || '';
+            document.getElementById('editSalary').value = emp.baseSalary || '';
+            document.getElementById('editAddress').value = emp.address || '';
+            
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editEmployeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const uid = document.getElementById('editUid').value;
+            const btn = document.getElementById('saveEditBtn');
+            
+            btn.disabled = true;
+            btn.innerText = "Saving Updates...";
+
+            try {
+                await updateDoc(doc(db, "employees", uid), {
+                    name: document.getElementById('editName').value,
+                    phone: document.getElementById('editPhone').value,
+                    department: document.getElementById('editDepartment').value,
+                    designation: document.getElementById('editDesignation').value,
+                    baseSalary: Number(document.getElementById('editSalary').value),
+                    address: document.getElementById('editAddress').value
+                });
+                
+                alert("Employee Profile Updated Successfully!");
+                closeEditModal();
+                fetchEmployeesDirectory(); // Refresh the list
+            } catch(error) {
+                alert("Error updating profile: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save Changes";
+            }
+        });
+
+        // --- Terminate/Restore Function ---
         window.toggleEmployeeStatus = async function(uid, currentStatus) {
             const actionName = currentStatus ? "terminate/block" : "restore/unblock";
             if(!confirm(`Are you sure you want to ${actionName} this employee?`)) return;
@@ -209,6 +323,7 @@
             }
         }
 
+        // --- Add New Employee Function ---
         document.getElementById('addEmployeeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const statusMsg = document.getElementById('statusMsg');
