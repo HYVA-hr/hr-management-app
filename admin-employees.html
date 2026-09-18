@@ -19,6 +19,7 @@
             margin: 0; 
             padding: 0; 
             font-size: 15px; 
+            padding-bottom: 70px; /* Space for bottom nav */
         }
 
         .header { 
@@ -278,13 +279,58 @@
         .close-btn:hover { 
             color: #fff; 
         }
+
+        /* Bottom Navigation Bar for Admin */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #242424;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            color: #aaa;
+            text-decoration: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-item:hover {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            color: #2ecc71;
+            border-top: 3px solid #2ecc71;
+            margin-top: -3px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
-        <a href="admin-dashboard.html" class="btn-back">Back to Dashboard</a>
+        <!-- Button can be hidden since we have bottom nav, but left here for desktop users -->
+        <a href="admin-dashboard.html" class="btn-back">Dashboard</a>
     </div>
 
     <div class="container">
@@ -414,6 +460,26 @@
                 
                 <button type="submit" class="submit-btn" id="saveEditBtn" style="background: #3498db; color: white;">Save Changes</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Admin Bottom Navigation Bar -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='admin-dashboard.html'">
+            <span class="nav-icon">🏠</span>
+            Home
+        </div>
+        <div class="nav-item active">
+            <span class="nav-icon">👥</span>
+            Employees
+        </div>
+        <div class="nav-item" onclick="window.location.href='admin-leaves.html'">
+            <span class="nav-icon">📅</span>
+            Leaves
+        </div>
+        <div class="nav-item" onclick="window.location.href='admin-holidays.html'">
+            <span class="nav-icon">🏖️</span>
+            Holidays
         </div>
     </div>
 
