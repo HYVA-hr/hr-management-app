@@ -5,49 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIRE YOUR VA - Employee Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 15px; }
-        .header { background-color: #242424; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
-        .header img { max-height: 40px; border-radius: 4px; }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-        #welcomeMsg { font-size: 14px; font-weight: 500; color: #f5f5dc; display: none; }
-        @media(min-width: 500px) { #welcomeMsg { display: inline; } }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #f5f5dc;
+            margin: 0;
+            padding: 0;
+            font-size: 15px;
+        }
+        .header {
+            background-color: #242424;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .header img {
+            max-height: 45px;
+            border-radius: 4px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #welcomeMsg {
+            font-size: 14px;
+            font-weight: 500;
+            color: #f5f5dc;
+            display: none;
+        }
+        @media(min-width: 500px) {
+            #welcomeMsg {
+                display: inline;
+            }
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: background-color 0.3s;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
         
-        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
-        .logout-btn:hover { background-color: #c0392b; }
-        
-        /* Clean Notification Bell */
-        .notif-container { position: relative; cursor: pointer; }
-        .notif-bell { font-size: 16px; background: #333; padding: 6px 10px; border-radius: 50%; display: inline-block; border: 1px solid #444; }
-        .notif-badge { position: absolute; top: -3px; right: -3px; background: #e74c3c; color: white; font-size: 10px; padding: 1px 5px; border-radius: 50%; font-weight: bold; display: none; }
-        .notif-dropdown { position: absolute; right: 0; top: 45px; width: 280px; background: #242424; border: 1px solid #444; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1000; max-height: 300px; overflow-y: auto; }
-        .notif-header { padding: 10px; border-bottom: 1px solid #333; font-weight: bold; color: #2ecc71; font-size: 13px; }
-        .notif-item { padding: 8px 10px; border-bottom: 1px solid #333; font-size: 12px; color: #ccc; }
-        .notif-item:hover { background: #2a2a2a; }
+        /* Clean Notification Bell & Right-Aligned Dropdown */
+        .notif-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .notif-bell {
+            font-size: 16px;
+            background: #333;
+            padding: 6px 10px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #444;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #e74c3c;
+            color: white;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 50%;
+            font-weight: bold;
+            display: none;
+        }
+        .notif-dropdown {
+            position: absolute;
+            right: 0;
+            left: auto;
+            top: 45px;
+            width: 260px;
+            background: #242424;
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 99999;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .notif-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid #333;
+            font-weight: bold;
+            color: #2ecc71;
+            font-size: 13px;
+        }
+        .notif-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .notif-item:hover {
+            background: #2a2a2a;
+        }
 
-        /* Toast Popup */
-        #toastBanner { visibility: hidden; min-width: 260px; background-color: #3498db; color: #fff; text-align: left; border-radius: 6px; padding: 12px 15px; position: fixed; z-index: 9999; right: 15px; bottom: 15px; font-size: 13px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 5px solid #111; }
-        #toastBanner.show { visibility: visible; animation: slidein 0.3s, fadeout 0.3s 3s; }
-        @keyframes slidein { from {bottom: 0; opacity: 0;} to {bottom: 15px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 15px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        /* Toast Popup Banner */
+        #toastBanner {
+            visibility: hidden;
+            min-width: 260px;
+            background-color: #3498db;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 12px 15px;
+            position: fixed;
+            z-index: 9999;
+            right: 15px;
+            bottom: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            border-left: 5px solid #111;
+        }
+        #toastBanner.show {
+            visibility: visible;
+            animation: slidein 0.3s, fadeout 0.3s 3s;
+        }
+        @keyframes slidein {
+            from { bottom: 0; opacity: 0; }
+            to { bottom: 15px; opacity: 1; }
+        }
+        @keyframes fadeout {
+            from { bottom: 15px; opacity: 1; }
+            to { bottom: 0; opacity: 0; }
+        }
 
-        .container { padding: 20px 15px; max-width: 450px; margin: 20px auto; text-align: center; background: #242424; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border-top: 4px solid #2ecc71; }
-        h2 { font-size: 22px; margin-top: 0; }
-        .time-display { font-size: 45px; font-weight: bold; color: #2ecc71; margin: 15px 0; letter-spacing: 1px; }
-        .late-warning { background: rgba(231, 76, 60, 0.2); color: #e74c3c; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: none; border: 1px solid #e74c3c; }
+        .container {
+            padding: 25px 20px;
+            max-width: 450px;
+            margin: 30px auto;
+            text-align: center;
+            background: #242424;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            border-top: 4px solid #2ecc71;
+        }
+        h2 {
+            font-size: 22px;
+            margin-top: 0;
+        }
+        .time-display {
+            font-size: 45px;
+            font-weight: bold;
+            color: #2ecc71;
+            margin: 15px 0;
+            letter-spacing: 1px;
+        }
+        .late-warning {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid #e74c3c;
+        }
         
-        .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-        button.action-btn { padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        button.action-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
         .btn-out { background-color: #e74c3c; color: white; }
         .btn-leave { background-color: #3498db; color: white; }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         
-        .stats { margin-top: 25px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #2ecc71; }
-        .stats p { margin: 8px 0; font-size: 14px; }
+        .stats {
+            margin-top: 25px;
+            text-align: left;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2ecc71;
+        }
+        .stats p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
         
-        #resetBtn { background: none; color: #3498db; border: none; text-decoration: underline; cursor: pointer; margin-top: 15px; display: none; font-size: 13px; }
-        #locationStatus { color: #f39c12; font-size: 12px; margin-top: 6px; font-weight: bold; height: 16px; }
+        #resetBtn {
+            background: none;
+            color: #3498db;
+            border: none;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 15px;
+            display: none;
+            font-size: 13px;
+        }
+        #locationStatus {
+            color: #f39c12;
+            font-size: 12px;
+            margin-top: 6px;
+            font-weight: bold;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
@@ -55,19 +236,24 @@
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
+            <!-- Notification Bell Component -->
             <div class="notif-container" id="notifContainer">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
                 <div class="notif-dropdown" id="notifDropdown">
                     <div class="notif-header">Leave Updates</div>
-                    <div id="notifList"><div style="padding: 12px; text-align: center; color: #777;">No updates</div></div>
+                    <div id="notifList">
+                        <div style="padding: 12px; text-align: center; color: #777;">No updates</div>
+                    </div>
                 </div>
             </div>
+
             <span id="welcomeMsg">Employee</span>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </div>
     </div>
 
+    <!-- Toast Popup Banner Container -->
     <div id="toastBanner">Update received!</div>
 
     <div class="container">
@@ -136,6 +322,7 @@
             locStatus: document.getElementById('locationStatus')
         };
 
+        // Custom Web Audio API Chime Tone Generator
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -149,16 +336,21 @@
                 gain.connect(audioCtx.destination);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.5);
-            } catch(e) {}
+            } catch (e) {}
         }
 
+        // Toggle Notification Dropdown Panel
         const notifContainer = document.getElementById('notifContainer');
         const notifDropdown = document.getElementById('notifDropdown');
-        notifContainer.addEventListener('click', (e) => {
-            e.stopPropagation();
+        
+        notifContainer.addEventListener('click', (event) => {
+            event.stopPropagation();
             notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
         });
-        window.addEventListener('click', () => { notifDropdown.style.display = 'none'; });
+
+        window.addEventListener('click', () => {
+            notifDropdown.style.display = 'none';
+        });
 
         function getTodayStr() {
             const d = new Date();
@@ -193,7 +385,9 @@
                     (position) => {
                         resolve({ lat: position.coords.latitude, lng: position.coords.longitude });
                     },
-                    (error) => { resolve({ error: "Permission denied or failed" }); },
+                    (error) => {
+                        resolve({ error: "Permission denied or failed" });
+                    },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             });
@@ -227,16 +421,16 @@
                 
                 let resolvedCount = 0;
                 let html = "";
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if(data.status === "APPROVED" || data.status === "REJECTED") {
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.status === "APPROVED" || data.status === "REJECTED") {
                         resolvedCount++;
                         const color = data.status === "APPROVED" ? "#2ecc71" : "#e74c3c";
                         html += `<div class="notif-item">Your leave (${data.fromDate}) was <strong style="color: ${color};">${data.status}</strong></div>`;
                     }
                 });
 
-                if(resolvedCount > 0) {
+                if (resolvedCount > 0) {
                     badge.innerText = resolvedCount;
                     badge.style.display = 'inline-block';
                     list.innerHTML = html;
@@ -244,11 +438,15 @@
                     badge.style.display = 'none';
                     list.innerHTML = '<div style="padding: 12px; text-align: center; color: #777;">No updates</div>';
                 }
-            } catch(e) { console.error(e); }
+            } catch (error) {
+                console.error("Error fetching employee notifications:", error);
+            }
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => window.location.href = "index.html");
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
+            });
         });
 
         async function loadAttendance() {
@@ -270,7 +468,7 @@
                     attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
                 }
             }
-            if(!attData.breaks) attData.breaks = [];
+            if (!attData.breaks) attData.breaks = [];
             updateUI();
         }
 
@@ -373,7 +571,7 @@
         });
 
         ui.clockOutBtn.addEventListener('click', async () => {
-            if(confirm("Are you sure you want to clock out?")) {
+            if (confirm("Are you sure you want to clock out?")) {
                 ui.locStatus.innerText = "Fetching GPS Location...";
                 ui.clockOutBtn.disabled = true;
 
@@ -396,7 +594,7 @@
         });
 
         ui.resetBtn.addEventListener('click', async () => {
-            if(confirm("TESTING: Delete today's attendance and start over?")) {
+            if (confirm("TESTING: Delete today's attendance and start over?")) {
                 await deleteDoc(doc(db, "attendance", attendanceDocId));
                 attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false };
                 updateUI();
