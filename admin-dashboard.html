@@ -17,11 +17,17 @@
         .notif-container { position: relative; cursor: pointer; }
         .notif-bell { font-size: 20px; background: #333; padding: 8px 12px; border-radius: 50%; display: inline-block; }
         .notif-badge { position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; font-weight: bold; display: none; }
-        .notif-dropdown { position: absolute; right: 0; top: 50px; width: 300px; background: #242424; border: 1px solid #444; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1000; max-height: 350px; overflow-y: auto; }
+        .notif-dropdown { position: absolute; right: 0; top: 50px; width: 320px; background: #242424; border: 1px solid #444; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1000; max-height: 350px; overflow-y: auto; }
         .notif-header { padding: 12px; border-bottom: 1px solid #333; font-weight: bold; color: #2ecc71; font-size: 14px; display: flex; justify-content: space-between; }
         .notif-item { padding: 10px 12px; border-bottom: 1px solid #333; font-size: 13px; color: #ccc; }
         .notif-item:hover { background: #2a2a2a; }
-        
+
+        /* Toast Popup Banner */
+        #toastBanner { visibility: hidden; min-width: 280px; background-color: #2ecc71; color: #111; text-align: left; border-radius: 8px; padding: 14px 18px; position: fixed; z-index: 9999; right: 20px; bottom: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 6px solid #111; }
+        #toastBanner.show { visibility: visible; animation: slidein 0.4s, fadeout 0.4s 3.5s; }
+        @keyframes slidein { from {bottom: 0; opacity: 0;} to {bottom: 20px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 20px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
         .container { padding: 30px; max-width: 1100px; margin: 20px auto; }
         h2 { border-bottom: 2px solid #2ecc71; padding-bottom: 10px; display: inline-block; font-size: 26px; }
         
@@ -51,6 +57,9 @@
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </div>
     </div>
+
+    <!-- Toast Popup Banner Container -->
+    <div id="toastBanner">New notification received!</div>
 
     <div class="container">
         <h2>Admin Panel</h2>
@@ -82,7 +91,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -97,21 +106,41 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Custom Tone using Web Audio API (No external file required)
+        // 1. Web Audio API Custom Tone
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 Note
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.5);
-            } catch(e) { console.log("Audio not allowed yet"); }
+            } catch(e) {}
+        }
+
+        // 2. Browser Native Web Push Permission Request
+        if (window.Notification && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        function showSystemNotification(title, body) {
+            playNotificationSound();
+            
+            // Toast Popup
+            const toast = document.getElementById('toastBanner');
+            toast.innerText = `${title}: ${body}`;
+            toast.className = "show";
+            setTimeout(() => { toast.className = ""; }, 4000);
+
+            // Native Browser Push Notification
+            if (window.Notification && Notification.permission === "granted") {
+                new Notification(title, { body: body, icon: 'logo.png' });
+            }
         }
 
         // Toggle dropdown
@@ -132,7 +161,6 @@
             }
         });
 
-        // Fetch latest pending leaves as notifications for Admin
         async function fetchAdminNotifications() {
             try {
                 const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
@@ -145,8 +173,10 @@
                     badge.style.display = 'inline-block';
                     
                     let html = "";
+                    let latestMsg = "";
                     snap.forEach(doc => {
                         const data = doc.data();
+                        latestMsg = `New leave request (${data.fromDate} to ${data.toDate})`;
                         html += `<div class="notif-item"><strong>New Leave Request</strong><br>(${data.fromDate} to ${data.toDate})</div>`;
                     });
                     list.innerHTML = html;
