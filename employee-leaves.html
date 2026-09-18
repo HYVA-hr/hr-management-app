@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIRE YOUR VA - Leave Management</title>
+    <title>HIRE YOUR VA - Employee Leaves</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; }
-        .header { background-color: #242424; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 15px; }
+        .header { background-color: #242424; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .header img { max-height: 40px; border-radius: 4px; }
-        .btn-back { background-color: #555; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .btn-back { background-color: #555; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; font-size: 13px; }
+        .btn-back:hover { background-color: #777; }
         
-        .container { padding: 20px; max-width: 500px; margin: 20px auto; }
-        .card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #3498db; margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #3498db; }
+        .container { padding: 15px; max-width: 600px; margin: 15px auto; }
+        .card { background: #242424; padding: 20px; border-radius: 10px; border-top: 4px solid #3498db; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        h2 { margin-top: 0; color: #3498db; font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
         
-        .input-group { display: flex; flex-direction: column; text-align: left; margin-bottom: 15px; }
-        label { font-size: 13px; color: #aaa; margin-bottom: 5px; }
-        input, select, textarea { padding: 10px; border: 1px solid #444; border-radius: 6px; background-color: #333; color: white; }
-        
-        button.submit-btn { width: 100%; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button.submit-btn:hover { background-color: #2980b9; }
-        #statusMsg { text-align: center; margin-top: 10px; font-weight: bold; }
+        .input-group { display: flex; flex-direction: column; text-align: left; margin-bottom: 12px; }
+        .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 500px) { .date-grid { grid-template-columns: 1fr; } }
 
-        .leave-item { background: #333; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #aaa; }
-        .leave-item.PENDING { border-left-color: #f39c12; }
-        .leave-item.APPROVED { border-left-color: #2ecc71; }
-        .leave-item.REJECTED { border-left-color: #e74c3c; }
-        .status-badge { float: right; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; background: #444; }
-        .PENDING .status-badge { color: #f39c12; }
-        .APPROVED .status-badge { color: #2ecc71; }
-        .REJECTED .status-badge { color: #e74c3c; }
+        label { font-size: 13px; color: #aaa; margin-bottom: 4px; font-weight: 500; }
+        input, select, textarea { padding: 10px; border: 1px solid #444; border-radius: 6px; background-color: #333; color: white; font-size: 14px; width: 100%; box-sizing: border-box; }
+        
+        button.submit-btn { width: 100%; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button.submit-btn:hover { background-color: #2980b9; }
+        #statusMsg { text-align: center; margin-top: 10px; font-weight: bold; font-size: 13px; }
+
+        .leave-item { background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #f39c12; }
+        .leave-item.approved { border-left-color: #2ecc71; }
+        .leave-item.rejected { border-left-color: #e74c3c; }
+        .leave-item p { margin: 4px 0; font-size: 13px; color: #ccc; }
     </style>
 </head>
 <body>
@@ -40,7 +40,7 @@
     </div>
 
     <div class="container">
-        <!-- Apply Leave Form -->
+        <!-- Apply Leave Card -->
         <div class="card">
             <h2>Apply for Leave</h2>
             <form id="leaveForm">
@@ -50,41 +50,41 @@
                         <option value="Casual Leave (CL)">Casual Leave (CL)</option>
                         <option value="Sick Leave (SL)">Sick Leave (SL)</option>
                         <option value="Paid Leave (PL)">Paid Leave (PL)</option>
-                        <option value="Unpaid Leave (LOP)">Unpaid Leave (LOP)</option>
                     </select>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <div class="input-group" style="flex: 1;">
+                
+                <div class="date-grid">
+                    <div class="input-group">
                         <label>From Date</label>
                         <input type="date" id="fromDate" required>
                     </div>
-                    <div class="input-group" style="flex: 1;">
+                    <div class="input-group">
                         <label>To Date</label>
                         <input type="date" id="toDate" required>
                     </div>
                 </div>
+
                 <div class="input-group">
                     <label>Reason for Leave</label>
-                    <textarea id="reason" rows="2" required></textarea>
+                    <textarea id="reason" rows="2" required placeholder="Enter reason..."></textarea>
                 </div>
+
                 <button type="submit" class="submit-btn" id="submitBtn">Submit Application</button>
                 <div id="statusMsg"></div>
             </form>
         </div>
 
         <!-- Leave History -->
-        <div class="card" style="border-top-color: #aaa;">
-            <h2 style="color: #f5f5dc;">My Leave History</h2>
-            <div id="leaveHistoryList">
-                <p style="text-align: center; color: #aaa;">Loading...</p>
-            </div>
+        <div class="card" style="border-top-color: #2ecc71;">
+            <h2 style="color: #2ecc71;">My Leave History</h2>
+            <div id="leaveHistoryList"><p style="color: #aaa; text-align: center;">Loading history...</p></div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -100,42 +100,45 @@
         const db = getFirestore(app);
         let currentUser = null;
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "index.html";
+            else {
                 currentUser = user;
-                loadLeaveHistory();
-            } else {
-                window.location.href = "index.html";
+                fetchLeaves(user.uid);
             }
         });
 
-        // Submit Leave Form
         document.getElementById('leaveForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
             const statusMsg = document.getElementById('statusMsg');
+            const submitBtn = document.getElementById('submitBtn');
+            
             submitBtn.disabled = true;
             statusMsg.innerText = "Submitting...";
             statusMsg.style.color = "#f39c12";
 
-            const fromDate = new Date(document.getElementById('fromDate').value);
-            const toDate = new Date(document.getElementById('toDate').value);
-            const diffTime = Math.abs(toDate - fromDate);
-            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
 
-            if (toDate < fromDate) {
-                statusMsg.innerText = "Error: 'To Date' cannot be before 'From Date'";
-                statusMsg.style.color = "#e74c3c";
+            // Calculate total days
+            const d1 = new Date(fromDate);
+            const d2 = new Date(toDate);
+            const diffTime = Math.abs(d2 - d1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            if (d2 < d1) {
+                alert("To Date cannot be earlier than From Date!");
                 submitBtn.disabled = false;
+                statusMsg.innerText = "";
                 return;
             }
 
             const leaveData = {
                 uid: currentUser.uid,
                 leaveType: document.getElementById('leaveType').value,
-                fromDate: document.getElementById('fromDate').value,
-                toDate: document.getElementById('toDate').value,
-                totalDays: totalDays,
+                fromDate: fromDate,
+                toDate: toDate,
+                totalDays: diffDays,
                 reason: document.getElementById('reason').value,
                 status: "PENDING",
                 appliedAt: Date.now()
@@ -143,43 +146,48 @@
 
             try {
                 await addDoc(collection(db, "leaves"), leaveData);
-                statusMsg.innerText = "Leave Applied Successfully!";
+                statusMsg.innerText = "Leave Application Submitted!";
                 statusMsg.style.color = "#2ecc71";
                 document.getElementById('leaveForm').reset();
-                loadLeaveHistory(); 
+                fetchLeaves(currentUser.uid);
             } catch (error) {
                 statusMsg.innerText = "Error: " + error.message;
                 statusMsg.style.color = "#e74c3c";
             } finally {
                 submitBtn.disabled = false;
+                setTimeout(() => statusMsg.innerText = "", 3000);
             }
         });
 
-        // Load Leave History
-        async function loadLeaveHistory() {
+        async function fetchLeaves(uid) {
             const listDiv = document.getElementById('leaveHistoryList');
             try {
-                const q = query(collection(db, "leaves"), where("uid", "==", currentUser.uid));
-                const querySnapshot = await getDocs(q);
+                const q = query(collection(db, "leaves"), where("uid", "==", uid));
+                const snap = await getDocs(q);
                 
                 let leaves = [];
-                querySnapshot.forEach((doc) => leaves.push(doc.data()));
+                snap.forEach(doc => leaves.push({ id: doc.id, ...doc.data() }));
                 leaves.sort((a, b) => b.appliedAt - a.appliedAt);
 
                 if (leaves.length === 0) {
-                    listDiv.innerHTML = "<p style='text-align: center; color: #aaa;'>No leaves applied yet.</p>";
+                    listDiv.innerHTML = "<p style='color: #aaa; text-align: center;'>No leave applications found.</p>";
                     return;
                 }
 
                 listDiv.innerHTML = "";
-                leaves.forEach(leave => {
+                leaves.forEach(l => {
+                    const statusClass = l.status === 'APPROVED' ? 'approved' : (l.status === 'REJECTED' ? 'rejected' : '');
+                    const badgeColor = l.status === 'APPROVED' ? '#2ecc71' : (l.status === 'REJECTED' ? '#e74c3c' : '#f39c12');
+                    
                     const div = document.createElement('div');
-                    div.className = `leave-item ${leave.status}`;
+                    div.className = `leave-item ${statusClass}`;
                     div.innerHTML = `
-                        <span class="status-badge">${leave.status}</span>
-                        <strong>${leave.leaveType}</strong><br>
-                        <span style="font-size: 13px; color: #ccc;">${leave.fromDate} to ${leave.toDate} (${leave.totalDays} Days)</span><br>
-                        <span style="font-size: 13px; color: #aaa;">Reason: ${leave.reason}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>${l.leaveType}</strong>
+                            <span style="font-size: 11px; font-weight: bold; color: ${badgeColor};">${l.status}</span>
+                        </div>
+                        <p><strong>Duration:</strong> ${l.fromDate} to ${l.toDate} (${l.totalDays} Days)</p>
+                        <p><strong>Reason:</strong> ${l.reason}</p>
                     `;
                     listDiv.appendChild(div);
                 });
