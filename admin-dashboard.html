@@ -8,23 +8,23 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 15px; }
         .header { background-color: #242424; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
         .header img { max-height: 40px; border-radius: 4px; }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-        #welcomeMsg { font-size: 14px; font-weight: 500; color: #f5f5dc; display: none; } /* Hide long text on small screens */
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        #welcomeMsg { font-size: 14px; font-weight: 500; color: #f5f5dc; display: none; }
         @media(min-width: 500px) { #welcomeMsg { display: inline; } }
         
         .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
         .logout-btn:hover { background-color: #c0392b; }
         
-        /* Clean Notification Bell */
+        /* Clean Notification Bell - CENTER ALIGNED FIX */
         .notif-container { position: relative; cursor: pointer; }
         .notif-bell { font-size: 16px; background: #333; padding: 6px 10px; border-radius: 50%; display: inline-block; border: 1px solid #444; }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #e74c3c; color: white; font-size: 10px; padding: 1px 5px; border-radius: 50%; font-weight: bold; display: none; }
-        .notif-dropdown { position: absolute; right: 0; top: 45px; width: 280px; background: #242424; border: 1px solid #444; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1000; max-height: 300px; overflow-y: auto; }
+        .notif-dropdown { position: absolute; left: 50%; transform: translateX(-50%); top: 45px; width: 260px; background: #242424; border: 1px solid #444; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1000; max-height: 300px; overflow-y: auto; }
         .notif-header { padding: 10px; border-bottom: 1px solid #333; font-weight: bold; color: #2ecc71; font-size: 13px; }
         .notif-item { padding: 8px 10px; border-bottom: 1px solid #333; font-size: 12px; color: #ccc; }
         .notif-item:hover { background: #2a2a2a; }
 
-        /* Toast Popup */
+        /* Toast Popup Banner */
         #toastBanner { visibility: hidden; min-width: 260px; background-color: #2ecc71; color: #111; text-align: left; border-radius: 6px; padding: 12px 15px; position: fixed; z-index: 9999; right: 15px; bottom: 15px; font-size: 13px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 5px solid #111; }
         #toastBanner.show { visibility: visible; animation: slidein 0.3s, fadeout 0.3s 3s; }
         @keyframes slidein { from {bottom: 0; opacity: 0;} to {bottom: 15px; opacity: 1;} }
@@ -45,6 +45,7 @@
     <div class="header">
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
+            <!-- Notification Bell -->
             <div class="notif-container" id="notifContainer">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
@@ -53,11 +54,13 @@
                     <div id="notifList"><div style="padding: 12px; text-align: center; color: #777;">No new notifications</div></div>
                 </div>
             </div>
+
             <span id="welcomeMsg">Admin</span>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </div>
     </div>
 
+    <!-- Toast Popup Banner Container -->
     <div id="toastBanner">New notification received!</div>
 
     <div class="container">
@@ -105,13 +108,14 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // 1. Web Audio API Custom Tone
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 Note
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
                 osc.connect(gain);
@@ -121,6 +125,12 @@
             } catch(e) {}
         }
 
+        // 2. Browser Native Web Push Permission Request
+        if (window.Notification && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        // Toggle dropdown
         const notifContainer = document.getElementById('notifContainer');
         const notifDropdown = document.getElementById('notifDropdown');
         notifContainer.addEventListener('click', (e) => {
@@ -152,7 +162,7 @@
                     let html = "";
                     snap.forEach(doc => {
                         const data = doc.data();
-                        html += `<div class="notif-item"><strong>New Leave</strong><br>(${data.fromDate} to ${data.toDate})</div>`;
+                        html += `<div class="notif-item"><strong>New Leave Request</strong><br>(${data.fromDate} to ${data.toDate})</div>`;
                     });
                     list.innerHTML = html;
                 } else {
