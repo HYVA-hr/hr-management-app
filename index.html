@@ -5,125 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIRE YOUR VA - Login</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            background-color: #1a1a1a; 
-            margin: 0; 
-            color: #f5f5dc; 
-        }
-        .login-container { 
-            background: #242424; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-            width: 100%; 
-            max-width: 350px; 
-            text-align: center;
-        }
-        .logo-box img {
-            max-width: 150px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-        h2 { margin-bottom: 25px; font-weight: normal; letter-spacing: 1px; }
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 10px 0; 
-            border: 1px solid #444; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            background-color: #333;
-            color: white;
-        }
-        input::placeholder { color: #aaa; }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background-color: #2ecc71; 
-            color: #111; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold;
-            margin-top: 15px;
-            transition: 0.3s;
-        }
-        button:hover { background-color: #27ae60; }
-        #error-message { color: #ff6b6b; font-size: 14px; margin-top: 15px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: #242424; padding: 40px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid #2ecc71; }
+        .login-card img { max-height: 80px; margin-bottom: 20px; border-radius: 6px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 14px; color: #aaa; margin-bottom: 8px; }
+        input { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 6px; background-color: #333; color: white; font-size: 16px; box-sizing: border-box; }
+        button.login-btn { width: 100%; padding: 14px; background-color: #2ecc71; color: #111; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button.login-btn:hover { background-color: #27ae60; }
+        #errorMsg { color: #e74c3c; font-size: 14px; margin-top: 15px; font-weight: bold; }
+        
+        .forgot-link { display: block; margin-top: 15px; color: #3498db; font-size: 14px; text-decoration: none; cursor: pointer; }
+        .forgot-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
-    <div class="login-container">
-        <div class="logo-box">
-            <img src="logo.png" alt="Hire Your VA Logo" onerror="this.style.display='none'">
-        </div>
+    <div class="login-card">
+        <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
+        <h2 style="color: #f5f5dc; margin-top: 0;">Portal Login</h2>
         
-        <h2>HR PORTAL</h2>
-        <input type="email" id="email" placeholder="Email ID" required>
-        <input type="password" id="password" placeholder="Password" required>
-        <button id="loginBtn">Secure Login</button>
-        <div id="error-message"></div>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="email" required placeholder="Enter your email">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="login-btn" id="submitBtn">Login</button>
+            <a class="forgot-link" id="forgotBtn">Forgot Password?</a>
+            <div id="errorMsg"></div>
+        </form>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Aapki update ki hui Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
             authDomain: "hire-your-va-hr.firebaseapp.com",
             projectId: "hire-your-va-hr",
             storageBucket: "hire-your-va-hr.firebasestorage.app",
             messagingSenderId: "75356368308",
-            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1",
-            measurementId: "G-PFKWP58KL5"
+            appId: "1:75356368308:web:be5c4cfaa62c72efced6e1"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error-message');
-            
-            if (!email || !password) {
-                errorDiv.innerText = "Please enter both email and password.";
-                return;
+        // Auto-redirect if already logged in
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await checkUserRoleAndRedirect(user.uid);
             }
+        });
 
-            errorDiv.innerText = "Authenticating...";
+        // Handle Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const submitBtn = document.getElementById('submitBtn');
+
+            errorMsg.innerText = "Logging in...";
+            errorMsg.style.color = "#f39c12";
+            submitBtn.disabled = true;
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
+                await checkUserRoleAndRedirect(userCredential.user.uid);
+            } catch (error) {
+                errorMsg.innerText = "Error: " + error.message;
+                errorMsg.style.color = "#e74c3c";
+                submitBtn.disabled = false;
+            }
+        });
 
-                const userDoc = await getDoc(doc(db, "employees", user.uid));
-                
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
+        // Handle Forgot Password
+        document.getElementById('forgotBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (!email) {
+                errorMsg.innerText = "Please enter your Email address above first, then click 'Forgot Password?'.";
+                errorMsg.style.color = "#f39c12";
+                return;
+            }
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                errorMsg.innerText = "Password reset link sent to your email inbox!";
+                errorMsg.style.color = "#2ecc71";
+            } catch (error) {
+                errorMsg.innerText = "Error: " + error.message;
+                errorMsg.style.color = "#e74c3c";
+            }
+        });
+
+        async function checkUserRoleAndRedirect(uid) {
+            try {
+                const docRef = doc(db, "employees", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
                     if (userData.role === "ADMIN") {
                         window.location.href = "admin-dashboard.html";
                     } else {
                         window.location.href = "employee-dashboard.html";
                     }
                 } else {
-                    errorDiv.innerText = "User profile not found in the database.";
+                    // Fallback for primary admin if not in employees collection
+                    window.location.href = "admin-dashboard.html";
                 }
             } catch (error) {
-                errorDiv.innerText = "Login failed: " + error.message;
+                document.getElementById('errorMsg').innerText = "Role check failed: " + error.message;
+                document.getElementById('submitBtn').disabled = false;
             }
-        });
+        }
     </script>
 </body>
 </html>
