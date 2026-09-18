@@ -130,7 +130,7 @@
         }
 
         .cal-day { 
-            min-height: 85px; 
+            min-height: 90px; 
             border-right: 1px solid #333; 
             border-bottom: 1px solid #333; 
             padding: 4px; 
@@ -166,7 +166,7 @@
             color: white; 
         }
 
-        /* Event Pills */
+        /* Event Pills with Multi-line Support */
         .event-pill {
             font-size: 10px;
             padding: 3px 4px;
@@ -174,7 +174,9 @@
             margin-bottom: 3px;
             color: white;
             font-weight: bold;
-            white-space: nowrap;
+            white-space: pre-line; /* Allows 2 lines using \n */
+            line-height: 1.2;
+            text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -272,7 +274,7 @@
         
         @media (max-width: 450px) {
             .container { padding: 8px; }
-            .cal-day { min-height: 70px; padding: 2px; }
+            .cal-day { min-height: 80px; padding: 2px; }
             .day-number { width: 18px; height: 18px; font-size: 11px; line-height: 18px; }
             .event-pill { font-size: 8px; padding: 2px; }
             .cal-header h2 { font-size: 16px; }
@@ -396,7 +398,7 @@
                         if(parts.length === 3) {
                             const bdayThisYear = `${currentYear}-${parts[1]}-${parts[2]}`;
                             const empName = employeeMap[docSnap.id];
-                            addEvent(bdayThisYear, `🎂 ${empName}'s B'day`, 'birthday');
+                            addEvent(bdayThisYear, `🎂 ${empName}\nB'day`, 'birthday');
                         }
                     }
                 });
@@ -418,10 +420,11 @@
                     if (data.fromDate && data.toDate) {
                         const range = getDatesInRange(data.fromDate, data.toDate);
                         range.forEach(dateStr => {
-                            addEvent(dateStr, `🌴 ${empName} (Leave)`, 'leave');
+                            // 2 lines format: Upar naam, niche Leave
+                            addEvent(dateStr, `${empName}\n🌴 Leave`, 'leave');
                         });
                     } else if (data.date) {
-                        addEvent(dateStr, `🌴 ${empName} (Leave)`, 'leave');
+                        addEvent(data.date, `${empName}\n🌴 Leave`, 'leave');
                     }
                 });
 
