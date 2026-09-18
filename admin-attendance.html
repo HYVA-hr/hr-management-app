@@ -18,7 +18,7 @@
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         
-        .emp-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #555; }
+        .emp-card { background: #242424; padding: 20px; border-radius: 8px; border-top: 4px solid #555; position: relative; }
         .emp-card h3 { margin: 0 0 10px 0; color: #2ecc71; }
         .emp-card p { margin: 5px 0; font-size: 14px; color: #ccc; }
         .emp-card hr { border: 0; border-top: 1px solid #333; margin: 10px 0; }
@@ -28,6 +28,10 @@
         .status.ON_BREAK { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
         .status.COMPLETED { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
         .status.ABSENT { background: rgba(170, 170, 170, 0.2); color: #aaa; }
+
+        .late-tag { background: #e74c3c; color: white; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+        .btn-revoke { background: transparent; color: #3498db; border: 1px solid #3498db; padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; display: block; margin-top: 10px; }
+        .btn-revoke:hover { background: #3498db; color: white; }
     </style>
 </head>
 <body>
@@ -53,7 +57,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -95,14 +99,26 @@
                 snap.forEach(doc => {
                     allEmployees.push({ id: doc.id, ...doc.data() });
                 });
-            } catch(e) { 
-                console.error("Error fetching employees", e); 
-            }
+            } catch(e) { console.error(e); }
         }
 
         function formatTime(timestamp) {
             if(!timestamp) return "--:--";
             return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Global Revoke Function
+        window.revokeHalfDay = async function(userId, dateStr) {
+            if(confirm("Revoke Half-Day penalty? This will give the employee full salary for this day.")) {
+                try {
+                    await updateDoc(doc(db, "attendance", `${userId}_${dateStr}`), {
+                        adminRevokedLate: true
+                    });
+                    fetchAttendance(dateStr); // reload UI
+                } catch (e) {
+                    alert("Error: " + e.message);
+                }
+            }
         }
 
         async function fetchAttendance(dateString) {
@@ -134,6 +150,7 @@
                     let outTime = "--:--";
                     let netTime = "0 mins";
                     let breakTime = "0 mins";
+                    let lateWarningHtml = "";
 
                     if(att) {
                         status = att.status;
@@ -141,6 +158,16 @@
                         inTime = formatTime(att.clockIn);
                         outTime = formatTime(att.clockOut);
                         
+                        // Half day Logic Display
+                        if(att.halfDayMarked) {
+                            if(att.adminRevokedLate) {
+                                lateWarningHtml = `<span style="color:#2ecc71; font-size:11px; margin-left:10px;">✅ Penalty Revoked</span>`;
+                            } else {
+                                lateWarningHtml = `<span class="late-tag">HALF DAY (LATE)</span>
+                                <button class="btn-revoke" onclick="revokeHalfDay('${emp.id}', '${dateString}')">Revoke Penalty</button>`;
+                            }
+                        }
+
                         if (att.status === "COMPLETED") {
                             netTime = `${att.netMinutes || 0} mins`;
                             breakTime = `${att.totalBreakMinutes || 0} mins`;
@@ -160,7 +187,6 @@
                         }
                     }
 
-                    // Fallback to prevent 'undefined'
                     const displayName = emp.name || emp.email || "Employee";
                     const displaySub = emp.employeeId || emp.email || "ID Not Set";
 
@@ -171,6 +197,7 @@
                     card.innerHTML = `
                         <h3>${displayName} <br><span style="font-size:12px; color:#aaa; font-weight:normal;">${displaySub}</span></h3>
                         <span class="status ${statusClass}">${status.replace("_", " ")}</span>
+                        ${lateWarningHtml}
                         <hr>
                         <p><strong>Punch In:</strong> ${inTime}</p>
                         <p><strong>Punch Out:</strong> ${outTime}</p>
