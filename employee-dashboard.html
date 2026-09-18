@@ -13,8 +13,9 @@
         
         .container { padding: 20px; max-width: 450px; margin: 40px auto; text-align: center; background: #242424; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-top: 4px solid #2ecc71; }
         .time-display { font-size: 45px; font-weight: bold; color: #2ecc71; margin: 20px 0; letter-spacing: 2px; }
+        .late-warning { background: rgba(231, 76, 60, 0.2); color: #e74c3c; padding: 8px; border-radius: 4px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: none; border: 1px solid #e74c3c; }
         
-        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
         button.action-btn { padding: 15px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
@@ -40,6 +41,7 @@
 
     <div class="container">
         <h2>Daily Attendance</h2>
+        <div class="late-warning" id="lateWarning">⚠️ HALF DAY MARKED (Punched after 5:30 PM)</div>
         <div class="time-display" id="netTimeDisplay">00:00:00</div>
         <p style="color: #aaa; font-size: 12px; margin-top: -15px;">NET WORKING TIME</p>
 
@@ -82,7 +84,7 @@
 
         let currentUser = null;
         let attendanceDocId = "";
-        let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
+        let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
         let timerInterval = null;
 
         const ui = {
@@ -96,11 +98,19 @@
             outTime: document.getElementById('clockOutTime'),
             breakTime: document.getElementById('totalBreakTime'),
             workedTime: document.getElementById('totalWorkedTime'),
-            resetBtn: document.getElementById('resetBtn')
+            resetBtn: document.getElementById('resetBtn'),
+            lateWarning: document.getElementById('lateWarning')
         };
 
         function getTodayStr() {
             const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // To handle shift crossing midnight to 2:30 AM
+        function getYesterdayStr() {
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
@@ -120,7 +130,6 @@
             if (user) {
                 currentUser = user;
                 ui.welcome.innerText = "Welcome, Employee";
-                attendanceDocId = `${user.uid}_${getTodayStr()}`;
                 await loadAttendance();
             } else {
                 window.location.href = "index.html";
@@ -132,26 +141,37 @@
         });
 
         async function loadAttendance() {
-            const docRef = doc(db, "attendance", attendanceDocId);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                attData = snap.data();
-                if(!attData.breaks) attData.breaks = [];
+            const todayStr = getTodayStr();
+            const yesterdayStr = getYesterdayStr();
+            
+            // Check if yesterday's shift is still running (for 2:30 AM checkout)
+            const yDocRef = doc(db, "attendance", `${currentUser.uid}_${yesterdayStr}`);
+            const ySnap = await getDoc(yDocRef);
+            
+            if (ySnap.exists() && (ySnap.data().status === "WORKING" || ySnap.data().status === "ON_BREAK")) {
+                attendanceDocId = `${currentUser.uid}_${yesterdayStr}`;
+                attData = ySnap.data();
             } else {
-                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
+                // Otherwise load today's shift
+                attendanceDocId = `${currentUser.uid}_${todayStr}`;
+                const tSnap = await getDoc(doc(db, "attendance", attendanceDocId));
+                if (tSnap.exists()) {
+                    attData = tSnap.data();
+                } else {
+                    attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
+                }
             }
+            if(!attData.breaks) attData.breaks = [];
             updateUI();
         }
 
         function calcTimes() {
             if (!attData.clockIn) return { netMs: 0, breakMs: 0 };
-            
             let breakMs = 0;
             attData.breaks.forEach(b => {
                 const end = b.end || (attData.status === "ON_BREAK" ? Date.now() : b.start);
                 breakMs += (end - b.start);
             });
-
             const endRef = attData.clockOut || Date.now();
             const netMs = Math.max(0, (endRef - attData.clockIn) - breakMs);
             return { netMs, breakMs };
@@ -159,6 +179,7 @@
 
         function updateUI() {
             ui.resetBtn.style.display = "none";
+            ui.lateWarning.style.display = (attData.halfDayMarked && !attData.adminRevokedLate) ? "block" : "none";
 
             if (attData.status === "WORKING") {
                 ui.status.innerText = "Working"; ui.status.style.color = "#2ecc71";
@@ -189,12 +210,9 @@
 
         function renderStaticTimes() {
             const { netMs, breakMs } = calcTimes();
-            const netTimeStr = msToHMS(netMs);
-            const breakTimeStr = msToHMS(breakMs);
-            
-            ui.netTime.innerText = netTimeStr;
-            ui.workedTime.innerText = netTimeStr;
-            ui.breakTime.innerText = breakTimeStr;
+            ui.netTime.innerText = msToHMS(netMs);
+            ui.workedTime.innerText = msToHMS(netMs);
+            ui.breakTime.innerText = msToHMS(breakMs);
         }
 
         function startTimer() {
@@ -204,7 +222,26 @@
         }
 
         ui.clockInBtn.addEventListener('click', async () => {
-            attData = { clockIn: Date.now(), clockOut: null, breaks: [], status: "WORKING", userId: currentUser.uid, date: getTodayStr() };
+            // Half Day Penalty Logic (> 5:30 PM)
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            let isLate = false;
+            // Shift is 17:30 to 02:30. Late if after 17:30 (5:30 PM) or early morning hours.
+            if (h > 17 || (h === 17 && m > 30) || h < 12) {
+                isLate = true;
+            }
+
+            attData = { 
+                clockIn: Date.now(), 
+                clockOut: null, 
+                breaks: [], 
+                status: "WORKING", 
+                userId: currentUser.uid, 
+                date: getTodayStr(),
+                halfDayMarked: isLate,
+                adminRevokedLate: false
+            };
             await setDoc(doc(db, "attendance", attendanceDocId), attData);
             updateUI();
         });
@@ -222,7 +259,7 @@
         });
 
         ui.clockOutBtn.addEventListener('click', async () => {
-            if(confirm("Are you sure you want to clock out for the day?")) {
+            if(confirm("Are you sure you want to clock out?")) {
                 attData.status = "COMPLETED";
                 attData.clockOut = Date.now();
                 const { netMs, breakMs } = calcTimes();
@@ -239,7 +276,7 @@
         ui.resetBtn.addEventListener('click', async () => {
             if(confirm("TESTING: Delete today's attendance and start over?")) {
                 await deleteDoc(doc(db, "attendance", attendanceDocId));
-                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT" };
+                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false };
                 updateUI();
             }
         });
