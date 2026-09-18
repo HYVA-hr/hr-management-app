@@ -205,7 +205,7 @@
             background: #242424;
             padding: 25px;
             border-radius: 10px;
-            max-width: 520px;
+            max-width: 580px;
             width: 100%;
             border-top: 5px solid #e74c3c;
             box-shadow: 0 8px 25px rgba(0,0,0,0.6);
@@ -269,23 +269,33 @@
             margin-top: 10px;
         }
 
-        .ack-list-box {
+        .history-list-box {
             background: #1a1a1a;
             padding: 12px;
             border-radius: 6px;
             margin-top: 15px;
-            max-height: 150px;
+            max-height: 220px;
             overflow-y: auto;
             text-align: left;
             border: 1px solid #333;
         }
 
-        .ack-item {
-            font-size: 12px;
+        .history-item {
+            font-size: 13px;
+            color: #f5f5dc;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
+        .history-item strong {
+            color: #e74c3c;
+        }
+
+        .ack-subtext {
+            font-size: 11px;
             color: #2ecc71;
-            margin: 4px 0;
-            border-bottom: 1px solid #252525;
-            padding-bottom: 4px;
+            margin-top: 4px;
         }
         
         /* Bottom Navigation Bar */
@@ -351,8 +361,8 @@
     <!-- Admin Broadcast Modal -->
     <div id="adminBroadcastModal">
         <div class="broadcast-admin-box">
-            <h3>📢 Broadcast & Acknowledgements</h3>
-            <p style="font-size: 13px; color: #aaa; margin: 0 0 10px 0;">Push live full-screen alerts and track who has acknowledged them.</p>
+            <h3>📢 Broadcast & History</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0 0 10px 0;">Push live alerts and check past broadcasts with employee acknowledgements.</p>
             
             <label style="font-size: 13px; color: #ccc;">Announcement Title:</label>
             <input type="text" id="bcTitleInput" placeholder="e.g., URGENT MEETING AT 4:00 PM">
@@ -360,12 +370,12 @@
             <label style="font-size: 13px; color: #ccc;">Message / Instructions:</label>
             <textarea id="bcMsgInput" rows="3" placeholder="Type instructions here..."></textarea>
             
-            <button class="btn-push" id="btnPushBroadcast">🚀 Push Message to All Employees</button>
-            <button class="btn-stop-push" id="btnStopBroadcast">🛑 Deactivate / Clear Current Alert</button>
+            <button class="btn-push" id="btnPushBroadcast">🚀 Push New Message to All</button>
+            <button class="btn-stop-push" id="btnStopBroadcast">🛑 Deactivate Current Active Alert</button>
             
-            <h4 style="color: #2ecc71; font-size: 14px; margin: 15px 0 5px 0;">Employee Acknowledgements (Seen & Confirmed):</h4>
-            <div class="ack-list-box" id="ackListContainer">
-                <span style="color: #777; font-size: 12px;">Loading acknowledgements...</span>
+            <h4 style="color: #2ecc71; font-size: 14px; margin: 15px 0 5px 0;">📜 Broadcast History & Acknowledgements:</h4>
+            <div class="history-list-box" id="historyListContainer">
+                <span style='color: #777; font-size: 12px;'>Loading history...</span>
             </div>
 
             <button class="btn-close-modal" id="btnCloseModal">Close Window</button>
@@ -436,7 +446,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot, addTag, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAw8NhVWaoMbm-CiED4M_K02wOSRtV2LUc",
@@ -451,14 +461,12 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Register Service Worker for PWA Notifications Support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
             });
         }
 
-        // Request browser permission for push notifications
         if (window.Notification && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
@@ -494,7 +502,7 @@
 
         window.openBroadcastModal = async function() {
             modal.style.display = 'flex';
-            loadAcknowledgements();
+            loadBroadcastHistory();
             try {
                 const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
                 if (docSnap.exists()) {
@@ -505,28 +513,38 @@
             } catch(e) {}
         }
 
-        async function loadAcknowledgements() {
-            const container = document.getElementById('ackListContainer');
+        async function loadBroadcastHistory() {
+            const container = document.getElementById('historyListContainer');
             try {
-                const docSnap = await getDoc(doc(db, "broadcasts", "latest_broadcast"));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const acks = data.acknowledgements || [];
-                    if (acks.length === 0) {
-                        container.innerHTML = "<span style='color: #777; font-size: 12px;'>No employee has acknowledged yet.</span>";
-                        return;
-                    }
-                    let html = "";
-                    acks.forEach(a => {
-                        const timeStr = new Date(a.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
-                        html += `<div class="ack-item">✅ <strong>${a.name}</strong> acknowledged at ${timeStr}</div>`;
-                    });
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = "<span style='color: #777; font-size: 12px;'>No active broadcast found.</span>";
+                const q = query(collection(db, "broadcast_history"), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    container.innerHTML = "<span style='color: #777; font-size: 12px;'>No broadcast history found.</span>";
+                    return;
                 }
+
+                let html = "";
+                snap.forEach(docSnap => {
+                    const item = docSnap.data();
+                    const dateStr = new Date(item.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                    const acks = item.acknowledgements || [];
+                    
+                    let acksHtml = acks.length > 0 
+                        ? acks.map(a => `✅ ${a.name} (${new Date(a.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`).join(', ')
+                        : "<span style='color: #888;'>No acknowledgements yet</span>";
+
+                    html += `
+                        <div class="history-item">
+                            <strong>${item.title || "ANNOUNCEMENT"}</strong> <span style="font-size: 11px; color: #888;">(${dateStr})</span><br>
+                            <span>${item.message}</span>
+                            <div class="ack-subtext"><strong>Seen by:</strong> ${acksHtml}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = "<span style='color: red; font-size: 12px;'>Failed to load list.</span>";
+                container.innerHTML = "<span style='color: red; font-size: 12px;'>Failed to load history.</span>";
             }
         }
 
@@ -539,14 +557,21 @@
             }
 
             try {
-                await setDoc(doc(db, "broadcasts", "latest_broadcast"), {
+                const broadcastData = {
                     title: title,
                     message: message,
                     timestamp: Date.now(),
                     active: true,
                     acknowledgements: []
-                });
-                alert("🚀 Announcement pushed live & history reset!");
+                };
+
+                // 1. Update latest active broadcast for live popup on employees side
+                await setDoc(doc(db, "broadcasts", "latest_broadcast"), broadcastData);
+
+                // 2. Save into history collection
+                await addDoc(collection(db, "broadcast_history"), broadcastData);
+
+                alert("🚀 Announcement pushed live & saved to history!");
                 modal.style.display = 'none';
             } catch (err) {
                 alert("Error: " + err.message);
@@ -572,7 +597,6 @@
             }
         });
 
-        // Realtime Firestore Listener for Pending Leaves & Notifications
         function initRealtimeNotifications() {
             let initialLoad = true;
             const q = query(collection(db, "leaves"), where("status", "==", "PENDING"));
@@ -588,7 +612,6 @@
                     badge.style.display = 'none';
                 }
 
-                // Trigger sound and popup on new incoming leave request (skipping initial snapshot load)
                 if (!initialLoad && snapshot.docChanges().some(change => change.type === "added")) {
                     showToast("🔔 New leave request received!");
                 }
