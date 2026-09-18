@@ -72,7 +72,6 @@
             background-color: #c0392b;
         }
         
-        /* Clean Notification Bell Component */
         .notif-container {
             position: relative;
             cursor: pointer;
@@ -160,6 +159,8 @@
         .btn-in { background-color: #2ecc71; color: #111; }
         .btn-break { background-color: #f39c12; color: #111; }
         .btn-out { background-color: #e74c3c; color: white; }
+        .btn-history { background-color: #8e44ad; color: white; margin-top: 10px; }
+        .btn-history:hover { background-color: #9b59b6; }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         
         .stats {
@@ -195,7 +196,7 @@
             height: 16px;
         }
 
-        /* Bottom Navigation Bar (App Tabs) */
+        /* Bottom Navigation Bar */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -239,8 +240,8 @@
             margin-bottom: 4px;
         }
 
-        /* Modals (Broadcast & Profile) */
-        #broadcastOverlay, .modal-overlay {
+        /* Modals (Broadcast, Profile, History) */
+        .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -256,65 +257,6 @@
             backdrop-filter: blur(5px);
         }
 
-        .broadcast-card {
-            background: #242424;
-            border: 2px solid #e74c3c;
-            border-radius: 12px;
-            max-width: 480px;
-            width: 100%;
-            padding: 30px 25px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4);
-            animation: popIn 0.3s ease-out;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0.85); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .broadcast-icon {
-            font-size: 45px;
-            margin-bottom: 10px;
-        }
-
-        .broadcast-card h3 {
-            color: #e74c3c;
-            margin: 0 0 12px 0;
-            font-size: 22px;
-            letter-spacing: 1px;
-        }
-
-        .broadcast-card p {
-            color: #f5f5dc;
-            font-size: 16px;
-            line-height: 1.5;
-            margin: 0 0 25px 0;
-            white-space: pre-line;
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #e74c3c;
-            text-align: left;
-        }
-
-        .btn-ack {
-            background: #2ecc71;
-            color: #111;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            transition: 0.2s;
-        }
-
-        .btn-ack:hover {
-            background: #27ae60;
-        }
-
         .modal-content {
             background: #242424;
             padding: 20px;
@@ -326,6 +268,8 @@
             overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             text-align: left;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-header {
@@ -357,29 +301,21 @@
             color: #fff;
         }
 
-        .profile-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        /* Profile Grid & Form */
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .profile-detail { margin-bottom: 8px; font-size: 14px; }
+        .profile-detail span { color: #aaa; display: block; font-size: 12px; margin-bottom: 2px; }
+        .profile-detail strong { color: #fff; font-size: 14px; word-break: break-word; }
+        
+        .edit-input { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; box-sizing: border-box; font-family: inherit; }
+        .edit-input:disabled { background: #1a1a1a; color: #888; cursor: not-allowed; border-color: #222; }
 
-        .profile-detail {
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .profile-detail span {
-            color: #aaa;
-            display: block;
-            font-size: 12px;
-            margin-bottom: 2px;
-        }
-
-        .profile-detail strong {
-            color: #fff;
-            font-size: 14px;
-            word-break: break-word;
-        }
+        /* History Card */
+        .history-card { background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8e44ad; }
+        .history-card h4 { margin: 0 0 5px 0; color: #8e44ad; font-size: 16px; }
+        .history-card p { margin: 3px 0; font-size: 13px; color: #ccc; }
+        
+        .month-picker { width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -388,23 +324,22 @@
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
             <!-- Notification Bell -->
-            <div class="notif-container" id="notifContainer" title="Notifications" onclick="window.location.href='employee-notifications.html'">
+            <div class="notif-container" id="notifContainer" onclick="window.location.href='employee-notifications.html'">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
             </div>
-
             <span id="welcomeMsg">Employee</span>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </div>
     </div>
 
-    <!-- Full-Screen Broadcast Modal -->
-    <div id="broadcastOverlay">
-        <div class="broadcast-card">
-            <div class="broadcast-icon">📢</div>
-            <h3 id="broadcastTitle">URGENT ANNOUNCEMENT</h3>
-            <p id="broadcastMsg">Admin message here...</p>
-            <button class="btn-ack" id="btnAckBroadcast">I Understand & Acknowledge</button>
+    <!-- Admin Broadcast Modal -->
+    <div class="modal-overlay" id="broadcastOverlay" style="align-items: center; justify-content: center; text-align: center;">
+        <div class="modal-content" style="border-top: 4px solid #e74c3c;">
+            <div style="font-size: 45px; margin-bottom: 10px;">📢</div>
+            <h3 id="broadcastTitle" style="color: #e74c3c; margin: 0 0 12px 0;">URGENT ANNOUNCEMENT</h3>
+            <p id="broadcastMsg" style="color: #f5f5dc; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c; text-align: left;"></p>
+            <button id="btnAckBroadcast" class="action-btn btn-in" style="width: 100%;">I Understand & Acknowledge</button>
         </div>
     </div>
 
@@ -416,7 +351,21 @@
                 <button class="close-btn" id="closeProfileBtn">&times;</button>
             </div>
             <div id="profileContent">
-                <p style="color: #aaa; text-align: center;">Loading profile...</p>
+                <!-- Loaded via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="color: #8e44ad;">📊 Monthly History</h3>
+                <button class="close-btn" id="closeHistoryBtn">&times;</button>
+            </div>
+            <input type="month" id="historyMonthPicker" class="month-picker">
+            <div id="historyList" style="flex: 1; overflow-y: auto;">
+                <p style="color: #aaa; text-align: center;">Select a month to view history.</p>
             </div>
         </div>
     </div>
@@ -433,6 +382,7 @@
             <button id="clockInBtn" class="action-btn btn-in">Clock In</button>
             <button id="breakBtn" class="action-btn btn-break" disabled>Take Break (ON)</button>
             <button id="clockOutBtn" class="action-btn btn-out" disabled>Clock Out</button>
+            <button id="viewHistoryBtn" class="action-btn btn-history">📊 View Monthly History</button>
         </div>
 
         <div class="stats">
@@ -488,14 +438,7 @@
         let currentUser = null;
         let employeeName = "Employee";
         let attendanceDocId = "";
-        let attData = {
-            clockIn: null,
-            clockOut: null,
-            breaks: [],
-            status: "OUT",
-            halfDayMarked: false,
-            adminRevokedLate: false
-        };
+        let attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
         let timerInterval = null;
 
         const ui = {
@@ -504,6 +447,7 @@
             clockInBtn: document.getElementById('clockInBtn'),
             breakBtn: document.getElementById('breakBtn'),
             clockOutBtn: document.getElementById('clockOutBtn'),
+            viewHistoryBtn: document.getElementById('viewHistoryBtn'),
             status: document.getElementById('currentStatus'),
             inTime: document.getElementById('clockInTime'),
             outTime: document.getElementById('clockOutTime'),
@@ -512,36 +456,109 @@
             resetBtn: document.getElementById('resetBtn'),
             lateWarning: document.getElementById('lateWarning'),
             locStatus: document.getElementById('locationStatus'),
+            
             broadcastOverlay: document.getElementById('broadcastOverlay'),
             broadcastTitle: document.getElementById('broadcastTitle'),
             broadcastMsg: document.getElementById('broadcastMsg'),
             btnAckBroadcast: document.getElementById('btnAckBroadcast'),
+            
             navProfileBtn: document.getElementById('navProfileBtn'),
             profileModal: document.getElementById('profileModal'),
             closeProfileBtn: document.getElementById('closeProfileBtn'),
-            profileContent: document.getElementById('profileContent')
+            profileContent: document.getElementById('profileContent'),
+
+            historyModal: document.getElementById('historyModal'),
+            closeHistoryBtn: document.getElementById('closeHistoryBtn'),
+            historyMonthPicker: document.getElementById('historyMonthPicker'),
+            historyList: document.getElementById('historyList')
         };
 
-        // Profile Modal Logic from Tab
+        // ================= PROFILE & EDIT LOGIC =================
+        function renderProfileView() {
+            const d = window.currentUserData;
+            if (!d) return;
+            ui.profileContent.innerHTML = `
+                <div class="profile-grid">
+                    <div class="profile-detail"><span>Full Name</span><strong>${d.name || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Phone Number</span><strong>${d.phone || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Employee ID</span><strong>${d.employeeId || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Email Address</span><strong>${d.email || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Department</span><strong>${d.department || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Designation</span><strong>${d.designation || 'N/A'}</strong></div>
+                    <div class="profile-detail"><span>Base Salary</span><strong>₹${(d.baseSalary || 0).toLocaleString()}</strong></div>
+                    <div class="profile-detail"><span>Date of Joining</span><strong>${d.doj || 'N/A'}</strong></div>
+                </div>
+                <div class="profile-detail" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                    <span>Full Address</span><strong>${d.address || 'N/A'}</strong>
+                </div>
+                <button id="startEditProfileBtn" class="action-btn btn-history" style="width: 100%; margin-top: 15px;">✏️ Edit My Profile</button>
+            `;
+            
+            document.getElementById('startEditProfileBtn').addEventListener('click', renderProfileEditForm);
+        }
+
+        function renderProfileEditForm() {
+            const d = window.currentUserData;
+            ui.profileContent.innerHTML = `
+                <form id="employeeEditForm">
+                    <div class="profile-detail">
+                        <span>Full Name</span>
+                        <input type="text" id="empEditName" class="edit-input" value="${d.name || ''}" required>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Phone Number</span>
+                        <input type="text" id="empEditPhone" class="edit-input" value="${d.phone || ''}" required>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Full Address</span>
+                        <textarea id="empEditAddress" class="edit-input" rows="2" required>${d.address || ''}</textarea>
+                    </div>
+                    <div class="profile-grid" style="margin-top: 15px;">
+                        <div class="profile-detail"><span>Employee ID (Read Only)</span><input type="text" class="edit-input" value="${d.employeeId || ''}" disabled></div>
+                        <div class="profile-detail"><span>Department (Read Only)</span><input type="text" class="edit-input" value="${d.department || ''}" disabled></div>
+                        <div class="profile-detail"><span>Designation (Read Only)</span><input type="text" class="edit-input" value="${d.designation || ''}" disabled></div>
+                        <div class="profile-detail"><span>Salary (Read Only)</span><input type="text" class="edit-input" value="₹${(d.baseSalary || 0).toLocaleString()}" disabled></div>
+                    </div>
+                    <button type="submit" id="saveEditProfileBtn" class="action-btn btn-in" style="width: 100%; margin-top: 15px;">💾 Save Changes</button>
+                    <button type="button" id="cancelEditBtn" style="background: none; color: #aaa; border: none; width: 100%; margin-top: 10px; cursor: pointer; text-decoration: underline;">Cancel</button>
+                </form>
+            `;
+
+            document.getElementById('cancelEditBtn').addEventListener('click', renderProfileView);
+            
+            document.getElementById('employeeEditForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('saveEditProfileBtn');
+                btn.disabled = true;
+                btn.innerText = "Saving...";
+
+                const newName = document.getElementById('empEditName').value;
+                const newPhone = document.getElementById('empEditPhone').value;
+                const newAddress = document.getElementById('empEditAddress').value;
+
+                try {
+                    await updateDoc(doc(db, "employees", currentUser.uid), {
+                        name: newName,
+                        phone: newPhone,
+                        address: newAddress
+                    });
+                    
+                    window.currentUserData.name = newName;
+                    window.currentUserData.phone = newPhone;
+                    window.currentUserData.address = newAddress;
+                    
+                    alert("Profile updated successfully!");
+                    renderProfileView();
+                } catch(error) {
+                    alert("Error updating profile: " + error.message);
+                    btn.disabled = false;
+                    btn.innerText = "💾 Save Changes";
+                }
+            });
+        }
+
         ui.navProfileBtn.addEventListener('click', () => {
-            if (window.currentUserData) {
-                const d = window.currentUserData;
-                ui.profileContent.innerHTML = `
-                    <div class="profile-grid">
-                        <div class="profile-detail"><span>Full Name</span><strong>${d.name || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Employee ID</span><strong>${d.employeeId || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Phone Number</span><strong>${d.phone || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Email Address</span><strong>${d.email || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Department</span><strong>${d.department || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Designation</span><strong>${d.designation || 'N/A'}</strong></div>
-                        <div class="profile-detail"><span>Base Salary</span><strong>₹${(d.baseSalary || 0).toLocaleString()}</strong></div>
-                        <div class="profile-detail"><span>Date of Joining</span><strong>${d.doj || 'N/A'}</strong></div>
-                    </div>
-                    <div class="profile-detail" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
-                        <span>Full Address</span><strong>${d.address || 'N/A'}</strong>
-                    </div>
-                `;
-            }
+            renderProfileView();
             ui.profileModal.style.display = 'flex';
         });
 
@@ -549,22 +566,95 @@
             ui.profileModal.style.display = 'none';
         });
 
+        // ================= HISTORY LOGIC =================
+        ui.viewHistoryBtn.addEventListener('click', () => {
+            const today = new Date();
+            const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            ui.historyMonthPicker.value = currentMonth;
+            fetchMonthlyHistory(currentMonth);
+            ui.historyModal.style.display = 'flex';
+        });
+
+        ui.closeHistoryBtn.addEventListener('click', () => {
+            ui.historyModal.style.display = 'none';
+        });
+
+        ui.historyMonthPicker.addEventListener('change', (e) => {
+            if (e.target.value) {
+                fetchMonthlyHistory(e.target.value);
+            }
+        });
+
+        async function fetchMonthlyHistory(monthStr) {
+            ui.historyList.innerHTML = "<p style='color: #aaa; text-align: center;'>Fetching records...</p>";
+            try {
+                const q = query(collection(db, "attendance"), where("userId", "==", currentUser.uid));
+                const snap = await getDocs(q);
+                let records = [];
+                
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.date && data.date.startsWith(monthStr)) {
+                        records.push(data);
+                    }
+                });
+
+                records.sort((a, b) => b.date.localeCompare(a.date)); // Sort latest first
+
+                if (records.length === 0) {
+                    ui.historyList.innerHTML = "<p style='color: #aaa; text-align: center;'>No attendance records found for this month.</p>";
+                    return;
+                }
+
+                let html = "";
+                records.forEach(rec => {
+                    // Calculate past times
+                    let breakMs = 0;
+                    if(rec.breaks) {
+                        rec.breaks.forEach(b => {
+                            if(b.start && b.end) breakMs += (b.end - b.start);
+                        });
+                    }
+                    const netMs = rec.clockOut ? Math.max(0, rec.clockOut - rec.clockIn - breakMs) : 0;
+                    
+                    const inTimeStr = rec.clockIn ? formatTimeFromTimestamp(rec.clockIn) : "N/A";
+                    const outTimeStr = rec.clockOut ? formatTimeFromTimestamp(rec.clockOut) : (rec.status === "WORKING" || rec.status === "ON_BREAK" ? "Shift Active" : "Missing");
+                    
+                    html += `
+                        <div class="history-card">
+                            <h4>📅 ${rec.date} ${rec.halfDayMarked && !rec.adminRevokedLate ? '<span style="color:#e74c3c; font-size:12px;">(Late)</span>' : ''}</h4>
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <p><strong>In:</strong> ${inTimeStr}</p>
+                                    <p><strong>Out:</strong> ${outTimeStr}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p><strong>Break:</strong> ${msToHMS(breakMs)}</p>
+                                    <p><strong>Net Work:</strong> <span style="color:#2ecc71; font-weight:bold;">${msToHMS(netMs)}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                ui.historyList.innerHTML = html;
+
+            } catch (error) {
+                ui.historyList.innerHTML = `<p style="color:#e74c3c;">Error: ${error.message}</p>`;
+            }
+        }
+
+
+        // ================= ATTENDANCE & FIREBASE SETUP LOGIC =================
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.5);
-            } catch (e) {
-                console.error("Audio generation failed", e);
-            }
+                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } catch (e) { }
         }
 
         function listenToAdminBroadcasts() {
@@ -602,9 +692,7 @@
                         })
                     });
                 }
-            } catch (e) {
-                console.error("Error acknowledging broadcast", e);
-            }
+            } catch (e) { }
             ui.broadcastOverlay.style.display = "none";
         });
 
@@ -614,8 +702,7 @@
         }
 
         function getYesterdayStr() {
-            const d = new Date();
-            d.setDate(d.getDate() - 1);
+            const d = new Date(); d.setDate(d.getDate() - 1);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
@@ -634,19 +721,11 @@
         function getUserLocation() {
             return new Promise((resolve) => {
                 if (!navigator.geolocation) {
-                    resolve({ error: "Geolocation not supported" });
-                    return;
+                    resolve({ error: "Geolocation not supported" }); return;
                 }
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        resolve({ error: "Permission denied or failed" });
-                    },
+                    (position) => { resolve({ lat: position.coords.latitude, lng: position.coords.longitude }); },
+                    (error) => { resolve({ error: "Permission denied or failed" }); },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             });
@@ -660,8 +739,7 @@
                     if (data.isActive === false) {
                         await signOut(auth);
                         alert("Your account has been terminated/blocked by Admin.");
-                        window.location.href = "index.html";
-                        return;
+                        window.location.href = "index.html"; return;
                     }
                     employeeName = data.name || data.fullName || "Employee";
                     window.currentUserData = data; 
@@ -685,26 +763,19 @@
                 let resolvedCount = 0;
                 
                 snap.forEach(docSnap => {
-                    if (docSnap.data().status === "APPROVED" || docSnap.data().status === "REJECTED") {
-                        resolvedCount++;
-                    }
+                    if (docSnap.data().status === "APPROVED" || docSnap.data().status === "REJECTED") resolvedCount++;
                 });
                 
                 if (resolvedCount > 0) {
-                    badge.innerText = resolvedCount;
-                    badge.style.display = 'inline-block';
+                    badge.innerText = resolvedCount; badge.style.display = 'inline-block';
                 } else {
                     badge.style.display = 'none';
                 }
-            } catch (error) {
-                console.error("Error fetching badges", error);
-            }
+            } catch (error) { }
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "index.html";
-            });
+            signOut(auth).then(() => { window.location.href = "index.html"; });
         });
 
         async function loadAttendance() {
@@ -723,27 +794,14 @@
                 if (tSnap.exists()) {
                     attData = tSnap.data();
                 } else {
-                    attData = {
-                        clockIn: null,
-                        clockOut: null,
-                        breaks: [],
-                        status: "OUT",
-                        halfDayMarked: false,
-                        adminRevokedLate: false
-                    };
+                    attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false, adminRevokedLate: false };
                 }
             }
-            
-            if (!attData.breaks) {
-                attData.breaks = [];
-            }
-            updateUI();
+            if (!attData.breaks) attData.breaks = []; updateUI();
         }
 
         function calcTimes() {
-            if (!attData.clockIn) {
-                return { netMs: 0, breakMs: 0 };
-            }
+            if (!attData.clockIn) return { netMs: 0, breakMs: 0 };
             
             let breakMs = 0;
             attData.breaks.forEach(b => {
@@ -753,7 +811,6 @@
             
             const endRef = attData.clockOut || Date.now();
             const netMs = Math.max(0, (endRef - attData.clockIn) - breakMs);
-            
             return { netMs, breakMs };
         }
 
@@ -762,149 +819,75 @@
             ui.lateWarning.style.display = (attData.halfDayMarked && !attData.adminRevokedLate) ? "block" : "none";
 
             if (attData.status === "WORKING") {
-                ui.status.innerText = "Working";
-                ui.status.style.color = "#2ecc71";
-                ui.clockInBtn.disabled = true;
-                ui.breakBtn.disabled = false;
-                ui.clockOutBtn.disabled = false;
-                ui.breakBtn.innerText = "Take Break (ON)";
-                startTimer();
+                ui.status.innerText = "Working"; ui.status.style.color = "#2ecc71";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = false;
+                ui.breakBtn.innerText = "Take Break (ON)"; startTimer();
             } else if (attData.status === "ON_BREAK") {
-                ui.status.innerText = "On Break";
-                ui.status.style.color = "#f39c12";
-                ui.clockInBtn.disabled = true;
-                ui.breakBtn.disabled = false;
-                ui.clockOutBtn.disabled = true;
-                ui.breakBtn.innerText = "Resume Work (OFF)";
-                startTimer(); 
+                ui.status.innerText = "On Break"; ui.status.style.color = "#f39c12";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = false; ui.clockOutBtn.disabled = true;
+                ui.breakBtn.innerText = "Resume Work (OFF)"; startTimer(); 
             } else if (attData.status === "COMPLETED") {
-                ui.status.innerText = "Shift Ended";
-                ui.status.style.color = "#e74c3c";
-                ui.clockInBtn.disabled = true;
-                ui.breakBtn.disabled = true;
-                ui.clockOutBtn.disabled = true;
-                ui.resetBtn.style.display = "inline-block";
-                clearInterval(timerInterval);
-                renderStaticTimes();
+                ui.status.innerText = "Shift Ended"; ui.status.style.color = "#e74c3c";
+                ui.clockInBtn.disabled = true; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+                ui.resetBtn.style.display = "inline-block"; clearInterval(timerInterval); renderStaticTimes();
             } else {
-                ui.status.innerText = "Not Started";
-                ui.status.style.color = "#aaa";
-                ui.clockInBtn.disabled = false;
-                ui.breakBtn.disabled = true;
-                ui.clockOutBtn.disabled = true;
-                ui.inTime.innerText = "--:--";
-                ui.outTime.innerText = "--:--";
-                ui.netTime.innerText = "00:00:00";
-                ui.breakTime.innerText = "00:00:00";
-                ui.workedTime.innerText = "00:00:00";
+                ui.status.innerText = "Not Started"; ui.status.style.color = "#aaa";
+                ui.clockInBtn.disabled = false; ui.breakBtn.disabled = true; ui.clockOutBtn.disabled = true;
+                ui.inTime.innerText = "--:--"; ui.outTime.innerText = "--:--";
+                ui.netTime.innerText = "00:00:00"; ui.breakTime.innerText = "00:00:00"; ui.workedTime.innerText = "00:00:00";
             }
-            
-            if (attData.clockIn) {
-                ui.inTime.innerText = formatTimeFromTimestamp(attData.clockIn);
-            }
-            if (attData.clockOut) {
-                ui.outTime.innerText = formatTimeFromTimestamp(attData.clockOut);
-            }
+            if (attData.clockIn) ui.inTime.innerText = formatTimeFromTimestamp(attData.clockIn);
+            if (attData.clockOut) ui.outTime.innerText = formatTimeFromTimestamp(attData.clockOut);
         }
 
         function renderStaticTimes() {
             const { netMs, breakMs } = calcTimes();
-            ui.netTime.innerText = msToHMS(netMs);
-            ui.workedTime.innerText = msToHMS(netMs);
-            ui.breakTime.innerText = msToHMS(breakMs);
+            ui.netTime.innerText = msToHMS(netMs); ui.workedTime.innerText = msToHMS(netMs); ui.breakTime.innerText = msToHMS(breakMs);
         }
 
         function startTimer() {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(renderStaticTimes, 1000);
-            renderStaticTimes();
+            clearInterval(timerInterval); timerInterval = setInterval(renderStaticTimes, 1000); renderStaticTimes();
         }
 
         ui.clockInBtn.addEventListener('click', async () => {
-            ui.locStatus.innerText = "Fetching GPS Location...";
-            ui.clockInBtn.disabled = true;
-            
-            const locationData = await getUserLocation();
-            ui.locStatus.innerText = "";
-            
-            const now = new Date();
-            const h = now.getHours();
-            const m = now.getMinutes();
-            let isLate = false;
-            
-            if (h > 17 || (h === 17 && m > 30) || h < 12) {
-                isLate = true;
-            }
+            ui.locStatus.innerText = "Fetching GPS Location..."; ui.clockInBtn.disabled = true;
+            const locationData = await getUserLocation(); ui.locStatus.innerText = "";
+            const now = new Date(); const h = now.getHours(); const m = now.getMinutes();
+            let isLate = false; if (h > 17 || (h === 17 && m > 30) || h < 12) isLate = true;
             
             attData = { 
-                clockIn: Date.now(),
-                clockOut: null,
-                breaks: [],
-                status: "WORKING",
-                userId: currentUser.uid,
-                date: getTodayStr(),
-                halfDayMarked: isLate,
-                adminRevokedLate: false,
-                inLocation: locationData
+                clockIn: Date.now(), clockOut: null, breaks: [], status: "WORKING", userId: currentUser.uid, 
+                date: getTodayStr(), halfDayMarked: isLate, adminRevokedLate: false, inLocation: locationData
             };
-            
-            await setDoc(doc(db, "attendance", attendanceDocId), attData);
-            updateUI();
+            await setDoc(doc(db, "attendance", attendanceDocId), attData); updateUI();
         });
 
         ui.breakBtn.addEventListener('click', async () => {
             if (attData.status === "WORKING") {
-                attData.status = "ON_BREAK";
-                attData.breaks.push({
-                    start: Date.now(),
-                    end: null
-                });
+                attData.status = "ON_BREAK"; attData.breaks.push({ start: Date.now(), end: null });
             } else if (attData.status === "ON_BREAK") {
-                attData.status = "WORKING";
-                attData.breaks[attData.breaks.length - 1].end = Date.now();
+                attData.status = "WORKING"; attData.breaks[attData.breaks.length - 1].end = Date.now();
             }
-            
-            await updateDoc(doc(db, "attendance", attendanceDocId), {
-                status: attData.status,
-                breaks: attData.breaks
-            });
-            updateUI();
+            await updateDoc(doc(db, "attendance", attendanceDocId), { status: attData.status, breaks: attData.breaks }); updateUI();
         });
 
         ui.clockOutBtn.addEventListener('click', async () => {
             if (confirm("Are you sure you want to clock out?")) {
-                ui.locStatus.innerText = "Fetching GPS Location...";
-                ui.clockOutBtn.disabled = true;
+                ui.locStatus.innerText = "Fetching GPS Location..."; ui.clockOutBtn.disabled = true;
+                const locationData = await getUserLocation(); ui.locStatus.innerText = "";
                 
-                const locationData = await getUserLocation();
-                ui.locStatus.innerText = "";
-                
-                attData.status = "COMPLETED";
-                attData.clockOut = Date.now();
-                const { netMs, breakMs } = calcTimes();
-                
+                attData.status = "COMPLETED"; attData.clockOut = Date.now(); const { netMs, breakMs } = calcTimes();
                 await updateDoc(doc(db, "attendance", attendanceDocId), { 
-                    status: attData.status,
-                    clockOut: attData.clockOut,
-                    netMinutes: Math.floor(netMs / 60000),
-                    totalBreakMinutes: Math.floor(breakMs / 60000),
-                    outLocation: locationData
-                });
-                updateUI();
+                    status: attData.status, clockOut: attData.clockOut, netMinutes: Math.floor(netMs / 60000),
+                    totalBreakMinutes: Math.floor(breakMs / 60000), outLocation: locationData
+                }); updateUI();
             }
         });
 
         ui.resetBtn.addEventListener('click', async () => {
             if (confirm("TESTING: Delete today's attendance and start over?")) {
                 await deleteDoc(doc(db, "attendance", attendanceDocId));
-                attData = {
-                    clockIn: null,
-                    clockOut: null,
-                    breaks: [],
-                    status: "OUT",
-                    halfDayMarked: false
-                };
-                updateUI();
+                attData = { clockIn: null, clockOut: null, breaks: [], status: "OUT", halfDayMarked: false }; updateUI();
             }
         });
     </script>
