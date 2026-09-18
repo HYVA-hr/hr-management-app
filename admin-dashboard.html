@@ -6,17 +6,17 @@
     <title>HIRE YOUR VA - Admin Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #f5f5dc; margin: 0; padding: 0; font-size: 16px; }
-        .header { background-color: #242424; padding: 12px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
-        .header img { max-height: 50px; border-radius: 4px; }
-        .header-right { display: flex; align-items: center; gap: 20px; }
-        #welcomeMsg { font-size: 16px; font-weight: 500; color: #f5f5dc; }
+        .header { background-color: #242424; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
+        .header img { max-height: 45px; border-radius: 4px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        #welcomeMsg { font-size: 15px; font-weight: 500; color: #f5f5dc; white-space: nowrap; }
         .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; }
         .logout-btn:hover { background-color: #c0392b; }
         
-        /* Notification Bell Styling (Facebook Style Page Redirect) */
-        .notif-container { position: relative; cursor: pointer; }
-        .notif-bell { font-size: 20px; background: #333; padding: 8px 12px; border-radius: 50%; display: inline-block; }
-        .notif-badge { position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; font-weight: bold; display: none; }
+        /* Clean Professional Notification Bell */
+        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #333; border-radius: 50%; border: 1px solid #444; }
+        .notif-bell { font-size: 18px; line-height: 1; }
+        .notif-badge { position: absolute; top: -3px; right: -3px; background: #e74c3c; color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: bold; display: none; }
 
         /* Toast Popup Banner */
         #toastBanner { visibility: hidden; min-width: 280px; background-color: #2ecc71; color: #111; text-align: left; border-radius: 8px; padding: 14px 18px; position: fixed; z-index: 9999; right: 20px; bottom: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 6px solid #111; }
@@ -40,7 +40,7 @@
         <img src="logo.png" alt="Hire Your VA" onerror="this.style.display='none'">
         <div class="header-right">
             <!-- Notification Bell (Redirects to Full Notifications Page) -->
-            <div class="notif-container" id="notifContainer" onclick="window.location.href='admin-notifications.html'">
+            <div class="notif-container" id="notifContainer" title="Notifications" onclick="window.location.href='admin-notifications.html'">
                 <div class="notif-bell">🔔</div>
                 <span class="notif-badge" id="notifBadge">0</span>
             </div>
